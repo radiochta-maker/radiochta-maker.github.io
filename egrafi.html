@@ -235,7 +235,7 @@
                 
                 await setDoc(doc(db, "users", user.uid), {
                     email: email,
-                    server: "sakis radio trela",
+                    server: "https://radiochta-maker.github.io/",
                     registeredAt: new Date().toLocaleString('el-GR')
                 });
                 await sendEmailVerification(user);
