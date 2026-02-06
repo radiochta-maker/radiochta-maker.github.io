@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Lyrics Video Background</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;font-family:Arial}
+
+#overlay{
+  position:absolute;
+  inset:0;
+}
+#lyric{
+  position:fixed;
+  bottom:50px;
+  left:50%;
+  transform:translateX(-50%);
+  color:white;
+  font-size:40px;
+  text-align:center;
+  text-shadow:0 0 15px black;
+  min-height:40px;
+}
+#audio{
+  position:fixed;
+  top:10px;
+  left:10px;
+  transition: opacity 0.5s;
+}
+#audio.hidden{opacity:0;pointer-events:none;}
+</style>
+	       <!--   fonto  -->
+	<style>
+body {
+  background-image: url('kar.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed; 
+  background-size: 100% 100%;
+}
+</style>
+	<!--   fonto  -->
+  <!--   fonto  απαλό διάφανο χρώμα -->
+    <style>
+      body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);; /* απαλό διάφανο χρώμα */
+      z-index: -1;
+     </style>
+	 <!--   fonto  απαλό διάφανο χρώμα -->
+
+
+</head>
+<body>
+
+
+
+<div id="overlay">
+  <div id="lyric"></div>
+  <audio id="audio" controls autoplay src="Γιατί Πάλι Αγαπάς.mp3"></audio>
+</div>
+
+<script>
+const lyrics=[
+[34,40,"Κάθομαι μόνος και μιλάω στη σκιά μου"],
+[40,48,"σαν να'ναι φίλος, παλιός η μοναξιά μου"],
+[48,55,"Καρδιά μου λέω ψιθυριστά, τι άλλο θες"],
+[55,69,"κάθε φορά που ανοίγεσαι ματώνεις και πονάς"],
+[69,76,"Μα όσο κι αν σε γιατρεύω πάλι ξεκινάς"],
+[76,86,"τρέχεις σε δρόμους που εγώ πια δεν περνάω"],
+[86,88,"Καρδιά μου"],
+[88,90,"Αφού πονάς και πληγώνεσαι"],
+[90,94,"γιατί πάλι αγαπάς, γιατί δεν σώνεσαι"],
+[94,98,"πες μου γιατί δεν μπορείς να ζήσεις"],
+[98,101,"χωρίς να αγαπάς, χωρίς να ελπίζεις"],
+[101,103,"Καρδιά μου"],
+[103,106,"Τι είναι αυτό που σε τράβα"],
+[108,118,"και σε οδηγεί ξανά σε όνειρα"],
+[135,143,"Και η ψυχή μου απαντά σαν να μ'ακούει"],
+[143,150,"ότι κι αν χάσεις αγάπη πάντα αξίζει"],
+[150,157,"μπορεί να σπάει, μα πάντα ξαναζεί"],
+[157,171,"σαν νανεφός που νικάει τη σκοτεινή σιωπή"],
+[171,177,"Κι ίσως γι'αυτό να τρέμεις μα τολμάς"],
+[177,187,"μόλις μια σπίθα αφήνει φως να δει"],
+[187,189,"Καρδιά μου"],
+[189,192,"Αφού πονάς και πληγώνεσαι"],
+[192,196,"γιατί πάλι αγαπάς, γιατί δεν σώνεσαι"],
+[196,199,"πες μου γιατί δεν μπορείς να ζήσεις"],
+[199,203,"χωρίς να αγαπάς, χωρίς να ελπίζεις"],
+[203,205,"Καρδιά μου"],
+[205,210,"Κι είναι αυτό που σε τραβά"],
+[210,216,"και σ'οδηγεί ξανά σε όνειρα"],
+[216,223,"Ίσως η αγάπη να'ναι ο μόνος δρόμος"],
+[223,230,"που κάνει τον άνθρωπο να νιώθει ζωντανός"],
+[230,237,"Ίσως να'ναι ο λόγος που ακόμα υπάρχω"],
+[237,250,"κι ας ξέρω πως κάθε τέλος πονάει βαθιά"],
+[258,260,"Καρδιά μου"],
+[260,263,"Αφού πονάς και πληγώνεσαι"],
+[263,267,"πάλι θα αγαπάς"],
+[267,273,"και ας πληγώνεσαι"],
+[273,280,"Ίσως έτσι μόνο να μπορείς να ζήσεις"],
+[280,287,"να ξαναγεννηθείς, να ξαναελπίζεις"],
+[287,292,"κι όσο θα χτυπάς θα μου θυμίζεις"],
+[292,310,"απλά πως χωρίς αγάπη δεν προχωράει η καρδιά"]
+];
+
+
+const lyricDiv=document.getElementById("lyric");
+const audio=document.getElementById("audio");
+
+let hideTimeout;
+let firstPlay=false;
+
+function scheduleHide(){
+  clearTimeout(hideTimeout);
+  hideTimeout=setTimeout(()=>audio.classList.add("hidden"),3000);
+}
+
+audio.ontimeupdate=()=>{
+  const t=audio.currentTime;
+  const line=lyrics.find(l=>t>=l[0] && t<l[1]);
+  lyricDiv.textContent=line?line[2]:"";
+};
+
+// Μόνο στο πρώτο play ξεκινάει η εξαφάνιση
+audio.addEventListener('play',()=>{
+  if(!firstPlay){
+    firstPlay=true;
+    scheduleHide();
+  }
+});
+
+// Κίνηση ποντικιού επαναφέρει τον player και ξανατρέχει timer
+document.addEventListener('mousemove',()=>{
+  if(firstPlay){
+    audio.classList.remove("hidden");
+    scheduleHide();
+  }
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+
+

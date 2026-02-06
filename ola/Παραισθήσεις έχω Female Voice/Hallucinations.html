@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Έξω από τα δόντια - Διορθωμένο</title>
+ <style>
+        /* ΣΤΥΛ ΓΙΑ ΤΗΝ ΜΠΑΡΑ ΚΥΛΙΣΗΣ */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #080808; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 255, 0, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 0, 0.8); }
+
+        body {
+            background-color: #080808;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between; /* Σπρώχνει τα στοιχεία για να χωράνε */
+            height: 100vh; /* Κλειδώνει στο ύψος της οθόνης */
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow: hidden; /* Εμποδίζει το κόψιμο */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .record-wrapper {
+            flex: 1; /* Επιτρέπει στον δίσκο να μικραίνει δυναμικά */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 0; 
+        }
+
+        .record {
+            height: 90%; /* Ο δίσκος παίρνει το 90% του διαθέσιμου ύψους της περιοχής του */
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            background-image: url('01.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #333;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.7);
+            animation: rotate-record 20s linear infinite;
+            animation-play-state: paused;
+        }
+
+        #lyrics-container {
+            width: 95%;
+            height: 80px; /* Μικρότερο ύψος για να αφήνει χώρο στον player */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        #lyrics-text {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 60px #ff00ff, 0 0 40px rgba(255, 255, 255, 0.9);
+            font-size: clamp(1rem, 4vw, 1.8rem);
+            font-weight: 700;
+            width: 100%;
+            word-wrap: break-word;
+            transition: opacity 0.4s ease-in-out;
+            opacity: 0;
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 400px;
+            padding: 5px;
+            background: rgba(255, 51, 0, 0.08);
+            border-radius: 30px;
+            flex-shrink: 0;
+        }
+
+        audio {
+            width: 100%;
+            filter: invert(100%);
+        }
+
+        @keyframes rotate-record {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="record-wrapper">
+        <div class="record" id="vinyl"></div>
+    </div>
+	
+	 <div id="lyrics-container">
+        <div id="lyrics-text"></div>
+    </div>
+
+    <div class="controls">
+        <audio id="player" controls autoplay>
+            <source src="Παραισθήσεις έχω Female Voice.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const vinyl = document.getElementById('vinyl');
+        const lyricsDisplay = document.getElementById('lyrics-text');
+
+        const lyrics = [
+            { t: 0, txt: "Μμμ, μμμ, μμμ, μμμ" },
+            { t: 14, txt: "Όπου κι αν πάω, όπου κι αν βρέθω" },
+            { t: 20, txt: "Μια τρέλα νιώθω να με κυβερνά" },
+            { t: 26, txt: "Στα μάτια όλων εσένα αναζητώ" },
+            { t: 32, txt: "Κι η λογική μου αργά παραπατά" },
+            { t: 39, txt: "Κοιτάζω τη θάλασσα μες στο γαλάζιο" },
+            { t: 43, txt: "Κι εκεί καθρεφτίζεται η δικιά σου η μορφή" },
+            { t: 46, txt: "Κοιτάζω το φεγγάρι, μοιάζει με αστείο" },
+            { t: 49, txt: "Μα πάλι εσένα βλέπω στην κορφή" },
+            { t: 60, txt: "Παραισθήσεις έχω, ζω σ' ένα όνειρο τρελό" },
+            { t: 65, txt: "Αισθάνομαι την αύρα σου όπου και να κοιτώ" },
+            { t: 72, txt: "Παραισθήσεις έχω, ακούω τη φωνή σου" },
+            { t: 77, txt: "Σαν ψιθυρός γλυκός η κάθε αναπνοή σου" },
+            { t: 85, txt: "Δεν είναι ψέμα μάτια μου ούτε φαντασία" },
+            { t: 91, txt: "Είσαι η μόνη μου γλυκιά τρελή αδυναμία" },
+            { t: 99, txt: "Στον δρόμο περπατάω, ο κόσμος μου μιλά" },
+            { t: 105, txt: "Μα τα αυτιά μου κλείνουν σε κάθε άλλη λέξη" },
+            { t: 113, txt: "Μόνο η φωνή σου ηχεί τόσο καθαρά" },
+            { t: 119, txt: "Σαν μελωδία που κανείς δεν έχει παίξει" },
+            { t: 126, txt: "Ανοίγω το ραδιόφωνο για να ξεχαστώ" },
+            { t: 129, txt: "Να διώξω τη μορφή σου έστω για λίγο" },
+            { t: 132, txt: "Μα πάλι εσένα ακούω να λες" },
+            { t: 135, txt: "Σ' αγαπώ και νιώθω πως απ' το μυαλό μου δεν θα φύγω" },
+            { t: 142, txt: "Κοιτάζω την οθόνη, βλέπω σένα πάλι" },
+            { t: 145, txt: "Να έρχεσαι κοντά μου, να με παίρνεις αγκαλιά" },
+            { t: 148, txt: "Κλείνω τα μάτια και γέρνω το κεφάλι" },
+            { t: 152, txt: "Μα και στον ύπνο μου εσύ είσαι βασιλιάς" },
+            { t: 160, txt: "Δεν μπορεί παραισθήσεις είναι " },
+            { t: 172, txt: "Παραισθήσεις έχω" },
+            { t: 175, txt: "Ζω σε ένα όνειρο τρελό" },
+            { t: 178, txt: "Αισθάνομαι την αύρα σου" },
+            { t: 182, txt: "Όπου και να κοιτώ" },
+            { t: 184, txt: "Παραισθήσεις έχω" },
+            { t: 188, txt: "Ακούω τη φωνή σου" },
+            { t: 191, txt: "Σαν ψιθύρος γλυκός" },
+            { t: 195, txt: "Η κάθε αναπνοή σου" },
+            { t: 198, txt: "Παραισθήσεις έχω" },
+            { t: 201, txt: "Παντού η μορφή σου" },
+            { t: 205, txt: "Παντού εσύ" },
+            { t: 209, txt: "Παραισθήσεις" },
+			{ t: 211, txt: "ΜΟΥΣΙΚΗ ΚΑΙ ΣΤΙΧΟΙ ΡΑΔΙΟ ΣΥΝΝΕΦΑ" }
+        ];
+
+          player.ontimeupdate = () => {
+            const currentTime = player.currentTime;
+            
+            // Βρίσκουμε τον στίχο που αντιστοιχεί στον τρέχοντα χρόνο
+            let activeLyric = null;
+            for (let i = 0; i < lyrics.length; i++) {
+                if (currentTime >= lyrics[i].t) {
+                    activeLyric = lyrics[i];
+                }
+            }
+
+            if (activeLyric) {
+                if (lyricsDisplay.innerText !== activeLyric.txt) {
+                    lyricsDisplay.innerText = activeLyric.txt;
+                    lyricsDisplay.style.opacity = 1;
+                }
+            } else {
+                lyricsDisplay.style.opacity = 0;
+            }
+        };
+
+        player.onplay = () => { vinyl.style.animationPlayState = 'running'; };
+        player.onpause = () => { vinyl.style.animationPlayState = 'paused'; };
+        player.onended = () => { vinyl.style.animationPlayState = 'paused'; lyricsDisplay.style.opacity = 0; };
+    </script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>tv live</title>
+	<!--   parathira  -->
+    <style>
+       html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Αρχικά όσο η οθόνη */
+    overflow-y: auto; /* Εμφάνιση scroll μόνο αν χρειαστεί */
+    overflow-x: hidden; /* Αποφυγή οριζόντιου scroll που χαλάει τη σελίδα */
+}
+
+        .menu-bar {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 2000;
+        }
+
+        /* ΕΠΑΝΑΦΟΡΑ ΧΡΩΜΑΤΟΣ ΜΠΟΥΤΟΝ */
+        .openBtn {
+            padding: 10px 20px;
+            background-color: #cc3399;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .videoContainer {
+            display: none;
+            position: absolute;
+            width: 480px;
+            height: 270px;
+            background: #000;
+            border: 2px solid #cc3399;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow: hidden;
+            padding-top: 30px;
+            user-select: none;
+        }
+
+        /* ΑΡΧΙΚΕΣ ΘΕΣΕΙΣ */
+        #videoContainer1 { top: 10px;  left: 30px; }
+        #videoContainer2 { top: 10px; left: 10px; }
+        #videoContainer3 { top: 10px; left: 20px; }
+        #videoContainer4 { top: 10px; left: 40px; }
+        #videoContainer5 { top: 10px; left: 50px; }
+
+        .dragHandle {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 30px;
+            background: #cc3399;
+            cursor: move;
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .closeBtn {
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            width: 25px;
+            height: 25px;
+            background: #ff4d4d;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            line-height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 13;
+        }
+
+        .welcomeMsg {
+            position: absolute;
+            top: 30px;
+            left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 15;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        .resizeHandle {
+            position: absolute;
+            width: 25px; height: 25px;
+            right: 0; bottom: 0;
+            background: #cc3399;
+            cursor: se-resize;
+            z-index: 12;
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        }
+
+        @media screen and (max-width: 600px) {
+            .videoContainer {
+                width: 90% !important;
+                left: 5% !important;
+                height: auto !important;
+                aspect-ratio: 16 / 9;
+            }
+        }
+    </style>
+	<!--   parathira  -->
+		  	       <!--   fonto  -->
+	<style>
+body {
+  background-image: url('7.png');
+  background-repeat: no-repeat;
+  background-attachment: fixed; 
+  background-size: 100% 100%;
+}
+
+
+</style>
+	<!--   fonto  -->
+	
+
+
+
+	
+</head>
+<body>
+
+
+
+
+
+
+<!--   parathira  -->
+<div class="menu-bar">
+    <button class="openBtn" onclick="openWindow(1, 'έξω από τα δόντια/outside.html')">έξω από τα δόντια</button>
+    <button class="openBtn" onclick="openWindow(2, 'παίζουμε μόνο ερωτικά-Duet/Duet.html')">παίζουμε μόνο ερωτικά-Duet</button>
+    <button class="openBtn" onclick="openWindow(3, 'Παραισθήσεις έχω Female Voice/Hallucinations.html')">Παραισθήσεις έχω Female Voice</button>
+    <button class="openBtn" onclick="openWindow(4, 'Γιατί Πάλι Αγαπάς/index.html')">Γιατί Πάλι Αγαπάς</button>
+    <button class="openBtn" onclick="openWindow(5, 'https://vdo.ninja/?view=SiDsgNa&cleanoutput&transparent&autoplay=1')">Tv Live Streaming</button>
+</div>
+
+<div id="videoContainer1" class="videoContainer">
+    <div id="dragHandle1" class="dragHandle">έξω από τα δόντια.mp3</div>
+    <div class="closeBtn" onclick="closeWindow(1)">&times;</div>
+    <div id="welcomeMsg1" class="welcomeMsg">
+	<p style="font-size: 0.9em; color: #ffff00;">
+      Σύρετε για μετακίνηση & μεγαλώστε<br> το παράθυρο από την κάτω δεξιά γωνία.
+    </p>
+	<h3>μετακινήσετε το παράθυρο tv όπου σας βολεύει</h3></div>
+    <iframe id="liveFrame1"></iframe>
+    <div id="resizeHandle1" class="resizeHandle"></div>
+</div>
+
+<div id="videoContainer2" class="videoContainer">
+    <div id="dragHandle2" class="dragHandle">παίζουμε μόνο ερωτικά-Duet.mp3</div>
+    <div class="closeBtn" onclick="closeWindow(2)">&times;</div>
+    <div id="welcomeMsg2" class="welcomeMsg">
+	<p style="font-size: 0.9em; color: #ffff00;">
+      Σύρετε για μετακίνηση & μεγαλώστε<br> το παράθυρο από την κάτω δεξιά γωνία.
+    </p>
+	<h3>μετακινήσετε το παράθυρο tv όπου σας βολεύει</h3></div>
+    <iframe id="liveFrame2"></iframe>
+    <div id="resizeHandle2" class="resizeHandle"></div>
+</div>
+
+<div id="videoContainer3" class="videoContainer">
+    <div id="dragHandle3" class="dragHandle">Παραισθήσεις έχω Female Voice.mp3</div>
+    <div class="closeBtn" onclick="closeWindow(3)">&times;</div>
+    <div id="welcomeMsg3" class="welcomeMsg">
+	<p style="font-size: 0.9em; color: #ffff00;">
+      Σύρετε για μετακίνηση & μεγαλώστε<br> το παράθυρο από την κάτω δεξιά γωνία.
+    </p>
+	<h3>μετακινήσετε το παράθυρο tv όπου σας βολεύει</h3></div>
+    <iframe id="liveFrame3"></iframe>
+    <div id="resizeHandle3" class="resizeHandle"></div>
+</div>
+
+<div id="videoContainer4" class="videoContainer">
+    <div id="dragHandle4" class="dragHandle">Γιατί Πάλι Αγαπάς.mp3</div>
+    <div class="closeBtn" onclick="closeWindow(4)">&times;</div>
+    <div id="welcomeMsg4" class="welcomeMsg">
+	<p style="font-size: 0.9em; color: #ffff00;">
+      Σύρετε για μετακίνηση & μεγαλώστε<br> το παράθυρο από την κάτω δεξιά γωνία.
+    </p>
+	<h3>μετακινήσετε το παράθυρο tv όπου σας βολεύει</h3></div>
+    <iframe id="liveFrame4"></iframe>
+    <div id="resizeHandle4" class="resizeHandle"></div>
+</div>
+
+<div id="videoContainer5" class="videoContainer">
+    <div id="dragHandle5" class="dragHandle">Live Streaming!</div>
+    <div class="closeBtn" onclick="closeWindow(5)">&times;</div>
+    <div id="welcomeMsg5" class="welcomeMsg">
+	   <h3 style="margin-top:0;">Καλώς ήρθατε στο Live Streaming!</h3>
+    <p>Εάν δεν υπάρχει ενεργή μετάδοση,<br> η οθόνη θα παραμείνει μαύρη.</p>
+    <p style="font-size: 0.9em; color: #ffff00;">
+      Σύρετε για μετακίνηση & μεγαλώστε<br> το παράθυρο από την κάτω δεξιά γωνία.
+    </p>
+	<h3>μετακινήσετε το παράθυρο tv όπου σας βολεύει</h3>
+  </div>
+   <iframe id="liveFrame5" allow="autoplay"></iframe>
+    <div id="resizeHandle5" class="resizeHandle"></div>
+</div>
+
+<script>
+function openWindow(id, url) {
+    const container = document.getElementById(`videoContainer${id}`);
+    const iframe = document.getElementById(`liveFrame${id}`);
+    const msg = document.getElementById(`welcomeMsg${id}`);
+    iframe.src = url;
+    container.style.display = 'block';
+    msg.style.display = 'flex';
+    msg.style.opacity = '1';
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        setTimeout(() => { msg.style.display = 'none'; }, 800);
+    }, 3000);
+}
+
+function closeWindow(id) {
+    document.getElementById(`liveFrame${id}`).src = "";
+    document.getElementById(`videoContainer${id}`).style.display = 'none';
+}
+
+function initLogic(id) {
+    const container = document.getElementById(`videoContainer${id}`);
+    const dragHandle = document.getElementById(`dragHandle${id}`);
+    const resizeHandle = document.getElementById(`resizeHandle${id}`);
+    const iframe = document.getElementById(`liveFrame${id}`);
+
+    // Η ΜΕΜΒΡΑΝΗ ΟΠΩΣ ΤΗΝ ΕΙΧΕΣ
+    const wall = document.createElement('div');
+    wall.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;display:none;cursor:se-resize;";
+    document.body.appendChild(wall);
+
+    let isDragging = false, isResizing = false;
+    let sX, sY, sW, sH;
+
+    const startAction = (e) => {
+        const t = e.touches ? e.touches[0] : e;
+        if (e.target === dragHandle) {
+            isDragging = true;
+            sX = t.clientX - container.offsetLeft;
+            sY = t.clientY - container.offsetTop;
+            wall.style.cursor = 'move';
+        } else {
+            isResizing = true;
+            sX = t.clientX; sY = t.clientY;
+            sW = container.offsetWidth; sH = container.offsetHeight;
+            wall.style.cursor = 'se-resize';
+        }
+        wall.style.display = 'block';
+        iframe.style.pointerEvents = 'none';
+        if(e.cancelable) e.preventDefault();
+    };
+
+    const moveAction = (e) => {
+        if (!isDragging && !isResizing) return;
+        const t = e.touches ? e.touches[0] : e;
+        if (isDragging) {
+            container.style.left = (t.clientX - sX) + 'px';
+            container.style.top = (t.clientY - sY) + 'px';
+        }
+        if (isResizing) {
+            container.style.width = (sW + (t.clientX - sX)) + 'px';
+            container.style.height = (sH + (t.clientY - sY)) + 'px';
+        }
+    };
+
+    const endAction = () => {
+        isDragging = isResizing = false;
+        wall.style.display = 'none';
+        iframe.style.pointerEvents = 'auto';
+    };
+
+    dragHandle.onmousedown = dragHandle.ontouchstart = startAction;
+    resizeHandle.onmousedown = resizeHandle.ontouchstart = startAction;
+    window.addEventListener('mousemove', moveAction);
+    window.addEventListener('touchmove', moveAction, {passive: false});
+    window.addEventListener('mouseup', endAction);
+    window.addEventListener('touchend', endAction);
+
+    container.onmousedown = () => {
+        document.querySelectorAll('.videoContainer').forEach(c => c.style.zIndex = "1000");
+        container.style.zIndex = "1001";
+    };
+}
+
+for(let i=1; i<=5; i++) { initLogic(i); }
+</script>
+<!--   parathira  -->
+
+
+
+<!--   klidoma apo forma  -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
+        authDomain: "radiochatlive.firebaseapp.com",
+        projectId: "radiochatlive",
+        storageBucket: "radiochatlive.firebasestorage.app",
+        messagingSenderId: "187137786763",
+        appId: "1:187137786763:web:67c3e2effef793ea7f658e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ΑΥΤΟ ΕΙΝΑΙ ΤΟ "ΟΠΛΟ" ΣΟΥ - ΕΛΕΓΧΕΙ ΑΝ Ο ΧΡΗΣΤΗΣ ΥΠΑΡΧΕΙ ΣΤΗ ΒΑΣΗ
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            try {
+                // Αναγκάζει τη Firebase να ελέγξει αν ο λογαριασμός είναι ακόμα ενεργός
+                await user.getIdToken(true);
+            } catch (error) {
+                // Αν τον έχεις διαγράψει, θα "χτυπήσει" σφάλμα εδώ
+                console.log("Ο χρήστης διαγράφηκε. Αποσύνδεση...");
+                localStorage.clear();
+                await signOut(auth);
+                window.location.href = "index.html"; // Βάλε εδώ το όνομα της σελίδας εγγραφής σου
+            }
+        } else {
+            // Αν δεν είναι καν συνδεδεμένος, τον πετάει έξω
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+    });
+</script>
+<!--   klidoma apo forma  -->
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
