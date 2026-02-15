@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Live Stream</title>
+<script src="jquery-3.2.1.min.js"></script>
+<script src="nativeflashradiov4.js"></script>
+<style>
+  html, body { height: 100%; margin: 0; padding: 0; }
+  body {
+    background-image: url('NMZc9VH.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 100% 100%;
+    font-family: Arial, sans-serif;
+    color: #66ff33;
+    text-align: center;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: -1;
+  }
+  #player-main, #player-backup { height: 100%; width: 100%; border-radius: 0; border: none; overflow: hidden; display: block; margin: 0 auto; }
+  #player-backup { display: none; }
+  .status-indicator { position: fixed; top: 10px; right: 10px; padding: 5px 10px; border-radius: 15px; font-size: 12px; z-index: 1000; background: rgba(0,0,0,0.7); }
+  .status-online { color: #66ff33; border: 1px solid #66ff33; }
+  .status-backup { color: #ffcc00; border: 1px solid #ffcc00; }
+  .radio-title-fallback { display: none; }
+  /* Κρυφό container για title κάτω αριστερά - ΔΕΝ ΦΑΙΝΕΤΑΙ */
+  #external-nowplaying {
+    display: none !important;
+  }
+</style>
+</head>
+<body oncontextmenu="return false">
+  <div id="status" class="status-indicator status-online">ΚΥΡΙΟΣ ΣΕΡΒΕΡ</div>
+ 
+  <section class="bg-texture-collage p-0" style="text-align:center; height: 100%;">
+    <!-- Κύριος Player -->
+    <div id="player-main" class="sodahnativeflashradio4 lunaaudioplayer"></div>
+   
+    <!-- Backup Player (κρυφό αρχικά) -->
+    <div id="player-backup" class="sodahnativeflashradio4 lunaaudioplayer"></div>
+   
+    <div id="radio-fallback" class="radio-title-fallback">ραδιο τρελα ζακυνθος</div>
+  </section>
+  <!-- Μικρό εμφανές κουτάκι τίτλου (τώρα κρυφό) -->
+  <div id="external-nowplaying"></div>
+<script>
+/* ====== CONFIG ====== */
+const STREAMS = {
+  primary: {
+    name: "ΚΥΡΙΟΣ ΣΕΡΒΕΡ",
+    streamUrl: "https://freestream.hu:8340/trela233",
+    statusUrl: "https://freestream.hu:8340/status-json.xsl?mount=/trela233",
+    type: "shoutcast2",
+    playerId: "player-main"
+  },
+  backup: {
+    name: "BACKUP ΣΕΡΒΕΡ",
+    streamUrl: "https://stream.zeno.fm/x8gduy6xd48uv",
+    zenoStationId: "x8gduy6xd48uv",
+    type: "shoutcast2",
+    playerId: "player-backup"
+  }
+};
+let currentPlayer = 'primary';
+let checkInterval = null;
+let titleUpdateInterval = null;
+let backupTitleEventSource = null;
+let backupPollingFallbackInterval = null;
+let radioNameEl = null;
+let observer = null;
+const originalRadioNameText = "ραδιο τρελα ζακυνθος";
+/* ====== UTILITIES ====== */
+function findRadioNameElementForPlayer(playerId) {
+  const baseSelectors = [
+    '.radioname',
+    '.title',
+    '.songtitle',
+    '.lunaradioname',
+    '.radio-name',
+    '.player-title',
+    '.radioname span',
+    '.title span'
+  ];
+  const container = document.getElementById(playerId);
+  if (!container) return null;
+  for (let sel of baseSelectors) {
+    const el = container.querySelector(sel);
+    if (el) return el;
+  }
+  const matches = container.querySelectorAll('*');
+  for (let n = 0; n < matches.length; n++) {
+    const node = matches[n];
+    if (node.childElementCount === 0 && node.textContent && node.textContent.trim().length > 0) {
+      const txt = node.textContent.trim();
+      if (txt.length < 120) return node;
+    }
+  }
+  return null;
+}
+function ensureRadioElementReadyForPlayer(playerId, callback) {
+  let el = findRadioNameElementForPlayer(playerId);
+  if (el) {
+    if (!el.dataset.originalText) el.dataset.originalText = (el.textContent || originalRadioNameText).trim();
+    callback(el);
+    return;
+  }
+  const root = document.getElementById(playerId) || document.body;
+  if (observer) { observer.disconnect(); observer = null; }
+  observer = new MutationObserver((mutations) => {
+    el = findRadioNameElementForPlayer(playerId);
+    if (el) {
+      if (!el.dataset.originalText) el.dataset.originalText = (el.textContent || originalRadioNameText).trim();
+      observer.disconnect();
+      observer = null;
+      callback(el);
+    }
+  });
+  observer.observe(root, { childList: true, subtree: true });
+  setTimeout(() => {
+    el = findRadioNameElementForPlayer(playerId);
+    if (el) {
+      if (!el.dataset.originalText) el.dataset.originalText = (el.textContent || originalRadioNameText).trim();
+      if (observer) { observer.disconnect(); observer = null; }
+      callback(el);
+    }
+  }, 5000);
+}
+function decodeGreek(str) {
+  try {
+    const decoder = new TextDecoder('windows-1253');
+    const bytes = new Uint8Array([...str].map(c => c.charCodeAt(0)));
+    return decoder.decode(bytes);
+  } catch(e) {
+    return str;
+  }
+}
+function setExternalNowPlaying(text) {
+  const el = document.getElementById('external-nowplaying');
+  if (!el) return;
+  el.textContent = text;
+}
+/* ====== PRIMARY TITLE POLLING (existing logic) ====== */
+async function fetchNowPlayingAndUpdate() {
+  if (currentPlayer !== 'primary') return;
+  try {
+    ensureRadioElementReadyForPlayer(STREAMS.primary.playerId, async (el) => {
+      let title = '';
+      try {
+        const response = await fetch(STREAMS.primary.statusUrl + '&t=' + Date.now());
+        if (!response.ok) throw new Error('bad response');
+        const data = await response.json();
+        if (data && data.icestats && data.icestats.source) {
+          const source = data.icestats.source;
+          if (Array.isArray(source)) {
+            const match = source.find(s => s.listenurl && s.listenurl.includes('/019630'));
+            title = match ? (match.title || '') : '';
+          } else {
+            title = source.title || '';
+          }
+        }
+      } catch (e) {
+        console.warn('fetch status failed:', e);
+        title = '';
+      }
+      if (title) title = decodeGreek(String(title).trim());
+      if (title && title.length > 0 && title.toLowerCase() !== 'άγνωστο') {
+        if ((el.textContent || '').trim() !== title) {
+          el.textContent = title;
+          setExternalNowPlaying(title);
+        }
+      } else {
+        const orig = el.dataset.originalText || originalRadioNameText;
+        if ((el.textContent || '').trim() !== orig) {
+          el.textContent = orig;
+          setExternalNowPlaying(orig);
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error in fetchNowPlayingAndUpdate', err);
+  }
+}
+function startTitlePolling() {
+  stopTitlePolling();
+  titleUpdateInterval = setInterval(fetchNowPlayingAndUpdate, 15000);
+  setTimeout(fetchNowPlayingAndUpdate, 1000);
+}
+function stopTitlePolling() {
+  if (titleUpdateInterval) {
+    clearInterval(titleUpdateInterval);
+    titleUpdateInterval = null;
+  }
+}
+/* ====== BACKUP TITLE (Zeno) - SSE or fallback fetch ====== */
+function startBackupTitlePolling() {
+  ensureRadioElementReadyForPlayer(STREAMS.backup.playerId, (el) => {
+    stopBackupTitlePolling();
+    if (!!window.EventSource && STREAMS.backup.zenoStationId) {
+      const metadataUrl = `https://api.zeno.fm/mounts/metadata/subscribe/${STREAMS.backup.zenoStationId}`;
+      try {
+        backupTitleEventSource = new EventSource(metadataUrl);
+      } catch(e) {
+        console.warn('SSE init failed, will fallback to polling', e);
+        startBackupPollingFallback(el);
+        return;
+      }
+      backupTitleEventSource.onmessage = function(ev) {
+        try {
+          const data = JSON.parse(ev.data);
+          const title = data && data.streamTitle ? String(data.streamTitle).trim() : '';
+          if (title && title.length > 0) {
+            el.textContent = title;
+            setExternalNowPlaying(title);
+          } else {
+            const orig = el.dataset.originalText || originalRadioNameText;
+            el.textContent = orig;
+            setExternalNowPlaying(orig);
+          }
+        } catch(err) {
+          console.warn('SSE parse error', err);
+        }
+      };
+      backupTitleEventSource.onerror = function(err) {
+        console.error('Backup SSE error', err);
+        stopBackupTitlePolling();
+        startBackupPollingFallback(el);
+      };
+    } else {
+      startBackupPollingFallback(el);
+    }
+  });
+}
+function startBackupPollingFallback(el) {
+  const fallbackUrl = `https://api.zeno.fm/mounts/metadata/subscribe/${STREAMS.backup.zenoStationId}`;
+  if (backupPollingFallbackInterval) { clearInterval(backupPollingFallbackInterval); backupPollingFallbackInterval = null; }
+  const doFetch = async () => {
+    try {
+      const resp = await fetch(fallbackUrl + '?t=' + Date.now());
+      if (!resp.ok) throw new Error('bad');
+      const data = await resp.json();
+      const title = data && data.streamTitle ? String(data.streamTitle).trim() : '';
+      if (title && title.length > 0) {
+        el.textContent = title;
+        setExternalNowPlaying(title);
+      } else {
+        const orig = el.dataset.originalText || originalRadioNameText;
+        el.textContent = orig;
+        setExternalNowPlaying(orig);
+      }
+    } catch(err) {
+      console.warn('backup polling failed', err);
+      const orig = el.dataset.originalText || originalRadioNameText;
+      el.textContent = orig;
+      setExternalNowPlaying(orig);
+    }
+  };
+  doFetch();
+  backupPollingFallbackInterval = setInterval(doFetch, 10000);
+}
+function stopBackupTitlePolling() {
+  if (backupTitleEventSource) {
+    try { backupTitleEventSource.close(); } catch(e){ }
+    backupTitleEventSource = null;
+  }
+  if (backupPollingFallbackInterval) {
+    clearInterval(backupPollingFallbackInterval);
+    backupPollingFallbackInterval = null;
+  }
+}
+/* ====== PLAYER CONTROL ====== */
+function updateStatusIndicator(status) {
+  const indicator = document.getElementById('status');
+  indicator.className = 'status-indicator ';
+  if (status === 'online') {
+    indicator.classList.add('status-online');
+    indicator.textContent = 'ΚΥΡΙΟΣ ΣΕΡΒΕΡ';
+  } else {
+    indicator.classList.add('status-backup');
+    indicator.textContent = 'BACKUP ΣΕΡΒΕΡ';
+  }
+}
+function initializePlayer(streamConfig) {
+  const playerElement = $("#" + streamConfig.playerId);
+  // ΜΟΝΗ ΑΛΛΑΓΗ: καθαρίζουμε πάντα πριν ξαναδημιουργήσουμε player (διορθώνει διπλό primary)
+  playerElement.empty().removeData('lunaradio');
+
+  playerElement.lunaradio({
+    userinterface: "big",
+    backgroundcolor: "",
+    fontcolor: "#66ff33",
+    hightlightcolor: "#ffffff",
+    fontname: "Unica One",
+    googlefont: "Unica+One&display=swap",
+    fontratio: "0.3",
+    radioname: streamConfig.name,
+    scroll: "true",
+    coverimage: "logo.png",
+    onlycoverimage: "true",
+    coverstyle: "animated",
+    usevisualizer: "real",
+    visualizertype: "6",
+    itunestoken: "1000lIPN",
+    metadatatechnic: "",
+    corsproxy: "",
+    usestreamcorsproxy: "true",
+    streamurl: streamConfig.streamUrl,
+    streamtype: streamConfig.type,
+    shoutcastpath: "",
+    shoutcastid: "",
+    metadatainterval: "",
+    volume: "100",
+    debug: "true",
+    autoplay: "true",
+    multicolorvisualizer: "true",
+    color1: "#ffff00",
+    color2: "#66ff66",
+    color3: "#0066ff",
+    color4: "#ff0000",
+    displayliveicon: "true",
+  });
+  setTimeout(() => {
+    ensureRadioElementReadyForPlayer(streamConfig.playerId, (el) => {
+      const orig = el.dataset.originalText || streamConfig.name || originalRadioNameText;
+      setExternalNowPlaying(orig);
+    });
+  }, 800);
+}
+function switchToPrimary() {
+  console.log('Αλλαγή σε ΚΥΡΙΟ ΣΕΡΒΕΡ');
+  stopBackupTitlePolling();
+  // ΕΠΑΝΑΦΟΡΑ ΣΤΟ ΑΡΧΙΚΟ ΣΟΥ: μόνο stop + hide για backup (δεν τον καταστρέφουμε)
+  try {
+    const backupPlayer = $("#player-backup").data('lunaradio');
+    if (backupPlayer && typeof backupPlayer.stop === 'function') backupPlayer.stop();
+  } catch(e){}
+  document.getElementById('player-backup').style.display = 'none';
+  document.getElementById('player-main').style.display = 'block';
+  initializePlayer(STREAMS.primary);
+  currentPlayer = 'primary';
+  updateStatusIndicator('online');
+  startTitlePolling();
+}
+function switchToBackup() {
+  console.log('Αλλαγή σε BACKUP ΣΕΡΒΕΡ');
+  stopTitlePolling();
+  try {
+    const mainPlayer = $("#player-main").data('lunaradio');
+    if (mainPlayer && typeof mainPlayer.stop === 'function') mainPlayer.stop();
+  } catch(e){}
+  document.getElementById('player-main').style.display = 'none';
+  document.getElementById('player-backup').style.display = 'block';
+  initializePlayer(STREAMS.backup);
+  currentPlayer = 'backup';
+  updateStatusIndicator('backup');
+  startBackupTitlePolling();
+}
+/* ====== PRIMARY SERVER HEALTH CHECK ====== */
+async function checkPrimaryServer() {
+  try {
+    const response = await fetch(STREAMS.primary.statusUrl + '&t=' + Date.now());
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.icestats && data.icestats.source) {
+        if (currentPlayer === 'backup') {
+          switchToPrimary();
+        }
+        return true;
+      }
+    }
+  } catch (error) {
+    console.log('Κύριος server OFFLINE');
+  }
+  if (currentPlayer === 'primary') {
+    switchToBackup();
+  }
+  return false;
+}
+/* ====== INIT ====== */
+$(document).ready(function() {
+  initializePlayer(STREAMS.primary);
+  checkInterval = setInterval(checkPrimaryServer, 10000);
+  setTimeout(checkPrimaryServer, 3000);
+  startTitlePolling();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
