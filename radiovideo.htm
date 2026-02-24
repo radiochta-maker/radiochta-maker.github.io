@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RADIO VIDEO</title>
+<style>
+body {
+  margin: 0;
+  background: transparent;
+  font-family: 'Orbitron', sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  perspective: 1200px;
+  overflow: hidden;
+}
+
+#player {
+  width: 900px;
+  height: 500px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 25px;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 100px #ff00ff55;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease;
+  position: relative;
+}
+
+#halo {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: calc(100% + 100px);
+  height: calc(100% + 100px);
+  border-radius: 35px;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.5;
+  background: conic-gradient(from 0deg, #ff0055, #00ffff, #ff00ff, #ff0055);
+  animation: rotateHalo 20s linear infinite;
+}
+
+@keyframes rotateHalo {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#left {
+  width: 30%;
+  padding: 20px;
+  border-right: 2px solid #ff00ff55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+#radio-name { font-size: 22px; font-weight: bold; color: #ffff00; margin-bottom: 10px; }
+#clock { font-size: 18px; }
+#date { font-size: 12px; opacity: 0.7; margin-bottom: 15px; }
+
+#mini-cover {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  border: 4px solid #ff0055;
+  background: url('radio.png') center/cover;
+  margin: 15px 0;
+  box-shadow: 0 0 40px #ff00ff;
+  animation: spin 12s linear infinite;
+  animation-play-state: paused;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#artist { font-weight: bold; color: #ff0055; text-align: center; }
+
+/* ΚΥΛΙΣΗ ΜΟΝΟ ΓΙΑ ΤΟΝ ΤΙΤΛΟ ΧΩΡΙΣ ΑΛΛΑΓΗ ΔΟΜΗΣ */
+#title { 
+  font-size: 14px; 
+  margin-bottom: 8px; 
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+#title span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: marquee 12s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+#equalizer {
+  width: 100%;
+  height: 60px;
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+}
+
+#listenersBox { margin-bottom: 15px; font-size: 14px; color: #00ffff; }
+
+.controls { display: flex; gap: 10px; align-items: center; }
+
+#playBtn {
+  padding: 8px 20px;
+  background: #ff0055;
+  border: none;
+  border-radius: 20px;
+  color: #ffff00;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#volume { width: 120px; }
+
+#right {
+  width: 100%;
+  display: flex;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+</style>
+       <!--   fonto  -->
+	<style>
+body {
+  background-image: url('fonto.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed; 
+  background-size: 100% 100%;
+}
+</style>
+	<!--   fonto  -->
+
+</head>
+<body>
+
+<div id="player">
+  <div id="halo"></div>
+
+  <div id="left">
+    <div id="radio-name">𝓡𝓐𝓓𝓘𝓞 𝓢𝔂𝓷𝓷𝓮𝓯𝓪</div>
+    <div id="clock">--:--:--</div>
+    <div id="date">--/--/----</div>
+
+    <div id="mini-cover"></div>
+    <div id="artist">ΦΟΡΤΩΣΗ...</div>
+    <div id="title"><span id="track-title">Περιμένετε...</span></div>
+
+    <canvas id="equalizer"></canvas>
+   
+
+    <div class="controls">
+      <button id="playBtn">▶ PLAY</button>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+    </div>
+  </div>
+
+  <div id="right">
+    <video autoplay muted loop playsinline>
+      <source src="https://radiochta-maker.github.io/aloo.webm" type="video/mp4">
+    </video>
+  </div>
+</div>
+
+<script>
+const STREAM = "https://radio.nitro-server.uk/listen/radiosinefa/radio.mp3";
+const API_URL = "https://radio.nitro-server.uk/api/nowplaying/radiosinefa"; // Το API για τον τίτλο
+
+const cover = document.getElementById("mini-cover");
+const playBtn = document.getElementById("playBtn");
+const volume = document.getElementById("volume");
+const canvas = document.getElementById("equalizer");
+const ctx = canvas.getContext("2d");
+const clock = document.getElementById("clock");
+const dateEl = document.getElementById("date");
+const artistEl = document.getElementById("artist");
+const titleSpan = document.getElementById("track-title");
+
+let audio, audioCtx, analyser, dataArray, playing = false;
+
+// ΛΕΙΤΟΥΡΓΙΑ ΓΙΑ ΤΟΝ ΖΩΝΤΑΝΟ ΤΙΤΛΟ
+async function updateSongInfo() {
+  try {
+    const response = await fetch(API_URL);
+    const data = await response.json();
+    if (data.now_playing.song) {
+      artistEl.textContent = data.now_playing.song.artist;
+      titleSpan.textContent = data.now_playing.song.title;
+    }
+  } catch (error) {
+    console.error("Error fetching title");
+  }
+}
+setInterval(updateSongInfo, 10000); // Ενημέρωση κάθε 10 δευτερόλεπτα
+updateSongInfo();
+
+function updateClock() {
+  const now = new Date();
+  clock.textContent = now.toLocaleTimeString("pt-PT");
+  dateEl.textContent = now.toLocaleDateString("pt-PT");
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+playBtn.onclick = async () => {
+  if (!audio) {
+    audio = new Audio(STREAM);
+    audio.crossOrigin = "anonymous";
+    audio.volume = volume.value;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    draw();
+  }
+  if (!playing) {
+    await audio.play();
+    playBtn.textContent = "⏸ PAUSE";
+    cover.style.animationPlayState = "running";
+    playing = true;
+  } else {
+    audio.pause();
+    playBtn.textContent = "▶ PLAY";
+    cover.style.animationPlayState = "paused";
+    playing = false;
+  }
+};
+
+volume.oninput = () => { if (audio) audio.volume = volume.value; };
+
+function draw() {
+  requestAnimationFrame(draw);
+  if (!analyser) return;
+  analyser.getByteFrequencyData(dataArray);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 64; i++) {
+    let val = dataArray[i] || 0;
+    const h = (val / 255) * canvas.height;
+    ctx.fillStyle = `hsl(${(i * 30 + Date.now() / 40) % 360},100%,50%)`;
+    ctx.fillRect(i * (canvas.width / 64), canvas.height - h, (canvas.width / 64) - 2, h);
+  }
+}
+
+document.addEventListener("mousemove", e => {
+  const x = (window.innerWidth / 2 - e.clientX) / 40;
+  const y = (window.innerHeight / 2 - e.clientY) / 40;
+  document.getElementById("player").style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+});
+</script>
+</body>
+</html>
