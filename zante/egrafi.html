@@ -96,17 +96,46 @@
         margin-top: 15px;
     }
 
-    /* Το φόντο του modal (κλείνει όλη την οθόνη) */
+   
+   /* Το φόντο του modal (κλείνει όλη την οθόνη) */
     .modal-overlay {
-        display: none; /* Κρυφό αρχικά */
+        display: none;
         position: fixed;
-        z-index: 1000;
+        z-index: 1001; /* Το ανέβασα λίγο για να είναι σίγουρα πάνω από όλα */
         left: 0;
         top: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0,0,0,0.2);
+        background-color: rgba(0,0,0,0.2); /* Πιο σκούρο για να διαβάζεται άνετα */
         backdrop-filter: blur(5px);
+        overflow-y: auto; /* Επιτρέπει το σκρολάρισμα αν το παράθυρο είναι μεγάλο */
+        padding: 20px 10px; /* Χώρος πάνω-κάτω για να μην κολλάει στις άκρες */
+    }
+
+    /* Το πλαίσιο του περιεχομένου */
+   .modal-content {
+        background: #2a2a2a;
+        margin: 20px auto; /* Μικρότερο margin για να χωράει σε κινητά */
+        padding: 30px;
+        border: 2px solid #ff3300;
+        width: 95%; /* Σχεδόν όλο το πλάτος σε κινητά */
+        max-width: 600px; /* Αλλά όχι πάνω από 600px σε PC */
+        border-radius: 15px;
+        text-align: center;
+        position: relative;
+        color: white;
+        box-shadow: 0 5px 60px rgba(0, 102, 255, 0.5);
+        box-sizing: border-box; /* Για να μην ξεφεύγει το padding από το πλάτος */
+    }
+
+    /* Για πολύ μικρές οθόνες, χαμηλώνουμε λίγο τα fonts για να μην πιάνουν χώρο */
+    @media screen and (max-height: 700px) {
+        .modal-content {
+            padding: 15px;
+            margin: 10px auto;
+        }
+        .modal-content h3 { font-size: 18px; }
+        .modal-content p { font-size: 13px !important; }
     }
 
     /* Το πλαίσιο του περιεχομένου */
@@ -317,9 +346,17 @@
             <strong>4. Είσοδος:</strong> Μόλις ενεργοποιήσετε το λογαριασμό, συνδεθείτε για να μπείτε στο ράδιο!
         </div>
 
-        <p style="margin-top: 20px; font-size: 13px; color: #ff4d4d; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: justify;">
-            <strong>Σημαντική Σημείωση:</strong> Η ταυτοποίηση μέσω εγγραφής μας δίνει τον απόλυτο έλεγχο για την προστασία του site. Σε περίπτωση ανάρμοστης συμπεριφοράς, έχουμε τη δυνατότητα να <strong>διαγράψουμε ή να αποκλείσουμε (ban) οριστικά</strong> οποιονδήποτε χρήστη δεν σέβεται τους κανόνες, εμποδίζοντας την εκ νέου είσοδό του στη σελίδα μας.
+        <p style="margin-top: 20px; font-size: 15px; color: #66ff66; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: justify;">
+            <strong>Σημαντική Σημείωση:</strong> Η ταυτοποίηση μέσω εγγραφής μας δίνει τον απόλυτο έλεγχο για την προστασία του site. Σε περίπτωση ανάρμοστης συμπεριφοράς, έχουμε τη δυνατότητα να <strong>διαγράψουμε ή να αποκλείσουμε (ban) οριστικά</strong> οποιονδήποτε χρήστη δεν σέβεται τους κανόνες.
         </p>
+
+        <!-- Νέα προσθήκη για Refresh/Live Player -->
+        <div style="margin-top: 15px; padding: 12px; background: rgba(0, 123, 255, 0.1); border: 1px dashed #007bff; border-radius: 8px; text-align: center;">
+            <p style="margin: 0; font-size: 15px; color: #fff;">
+                💡 <strong>Δεν επιθυμείτε εγγραφή;</strong><br>
+                Κάντε απλώς μια <strong>ανανέωση (refresh)</strong> της σελίδας για να κλείσετε αυτό το παράθυρο και να ακούσετε μόνο τον <strong>Live Player</strong> του σταθμού μας.
+            </p>
+        </div>
     </div>
 </div>
 <!--Πληροφορίες -->
