@@ -395,7 +395,44 @@
 </script>
 <!-- mono live tv  -->
 
+<!--   klidoma apo forma  -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+    const firebaseConfig = {
+        apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
+        authDomain: "radiochatlive.firebaseapp.com",
+        projectId: "radiochatlive",
+        storageBucket: "radiochatlive.firebasestorage.app",
+        messagingSenderId: "187137786763",
+        appId: "1:187137786763:web:67c3e2effef793ea7f658e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ΑΥΤΟ ΕΙΝΑΙ ΤΟ "ΟΠΛΟ" ΣΟΥ - ΕΛΕΓΧΕΙ ΑΝ Ο ΧΡΗΣΤΗΣ ΥΠΑΡΧΕΙ ΣΤΗ ΒΑΣΗ
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            try {
+                // Αναγκάζει τη Firebase να ελέγξει αν ο λογαριασμός είναι ακόμα ενεργός
+                await user.getIdToken(true);
+            } catch (error) {
+                // Αν τον έχεις διαγράψει, θα "χτυπήσει" σφάλμα εδώ
+                console.log("Ο χρήστης διαγράφηκε. Αποσύνδεση...");
+                localStorage.clear();
+                await signOut(auth);
+                window.location.href = "egrafi.html"; // Βάλε εδώ το όνομα της σελίδας εγγραφής σου
+            }
+        } else {
+            // Αν δεν είναι καν συνδεδεμένος, τον πετάει έξω
+            localStorage.clear();
+            window.location.href = "egrafi.html";
+        }
+    });
+</script>
+<!--   klidoma apo forma  -->
 
 // Αυτό βρίσκει το τρέχον έτος και το βάζει αυτόματα στο id "current-year"
 <script>document.getElementById('current-year').textContent = new Date().getFullYear();</script>
