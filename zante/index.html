@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Ράδιο Σύννεφα - Radio Synnefa - Radio Sinefa | Το πιο ερωτικό ραδιόφωνο</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "RadioStation",
+  "name": "Ράδιο Σύννεφα - Radio Synnefa",
+  "alternateName": "radio sinefa",
+  "url": "https://zantetrelos-cpu.github.io/radiotrela/",
+  "description": "Το πιο ερωτικό ραδιόφωνο στο διαδίκτυο. Μόνο ερωτικά τραγούδια.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "GR"
+  }
+}
+</script>
+
+<meta name="description" content="Ράδιο Σύννεφα - Radio Synnefa- radio sinefa. Εδώ παίζουμε μόνο ερωτικά τραγούδια. Το πιο ερωτικό ραδιόφωνο στο διαδίκτυο.">
+<meta name="keywords" content="ράδιο σύννεφα, radio synnefa,radio sinefa, radio live, radio internet, web radio, chat radio, ερωτικά τραγούδια">
+<meta name="author" content="Radio Synnefa">
+<meta property="og:title" content="Ράδιο Σύννεφα - Radio Synnefa">
+<meta property="og:description" content="Εδώ παίζουμε μόνο ερωτικά τραγούδια!">
+<meta property="og:image" content="foto-face.png">
+<meta property="og:url" content="https://zantetrelos-cpu.github.io/radiotrela/">
+<link rel="icon" href="https://zantetrelos-cpu.github.io/radiotrela/favicon.png" type="image/png">
+	
+	
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Georgia', serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('fon.png');
+            background-repeat: no-repeat;
+            background-attachment: fixed; 
+            background-size: 100% 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* ΤΟ ΔΙΑΚΡΙΤΙΚΟ ΚΕΙΜΕΝΟ ΕΠΑΝΩ ΚΕΝΤΡΟ */
+        #top-brand {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.4;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ΕΦΕ ΕΚΡΗΞΗΣ INTRO */
+        .cinematic-exit {
+            animation: explosionBlur 1.5s cubic-bezier(0.7, 0, 0.3, 1) forwards !important;
+        }
+
+        @keyframes explosionBlur {
+            0% { transform: scale(1); filter: blur(0px); opacity: 1; }
+            100% { transform: scale(4); filter: blur(30px); opacity: 0; }
+        }
+
+        /* ΤΟ ΑΡΓΟ ΕΝΙΣΧΥΜΕΝΟ ΕΦΕ ΤΟΥ PLAYER */
+        .player-entrance {
+            display: block !important;
+            animation: superZoomIn 8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes superZoomIn {
+            0% { 
+                transform: scale(0.1); 
+                opacity: 0; 
+                filter: brightness(2) blur(15px);
+            }
+            50% {
+                transform: scale(2.2);
+                opacity: 1;
+                filter: brightness(1.3) blur(2px);
+            }
+            100% { 
+                transform: scale(1);
+                opacity: 1;
+                filter: brightness(1) blur(0px);
+            }
+        }
+
+        .intro-img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80%;
+            z-index: 100;
+            opacity: 0;
+            animation: fadeOutImage 6s ease-in-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOutImage {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        .scroll-container {
+            position: relative;
+            width: 90%; 
+            max-width: 1200px;
+            text-align: center;
+            perspective: 1000px;
+        }
+
+        .scrolling-text {
+            position: absolute;
+            bottom: -60%; 
+            width: 100%;
+            opacity: 0;
+            animation: modernScroll 35s linear 4.5s forwards, breathing 3s ease-in-out infinite alternate; 
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .scrolling-text h2 {
+            font-size: clamp(1.2rem, 5vw, 2.8rem);
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            color: #ff3366;
+            display: block;
+            word-wrap: break-word;
+            animation: colorShift 4s infinite alternate;
+        }
+
+        .scrolling-text p {
+            font-size: clamp(0.9rem, 3vw, 1.6rem);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .highlight {
+            font-size: clamp(1rem, 4vw, 2rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #ff0044;
+            display: block;
+            margin: 15px 0;
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        @keyframes modernScroll {
+            0% { bottom: -60%; opacity: 0; filter: blur(5px); transform: translateX(-10px); }
+            5% { opacity: 1; filter: blur(0px); }
+            50% { transform: translateX(10px); }
+            95% { opacity: 1; filter: blur(0px); }
+            100% { bottom: 120%; opacity: 0; filter: blur(5px); visibility: hidden; transform: translateX(0); }
+        }
+
+        @keyframes breathing {
+            0% { transform: scale(1); text-shadow: 0 0 10px rgba(255, 51, 102, 0.5); }
+            100% { transform: scale(1.05); text-shadow: 0 0 25px rgba(255, 51, 102, 0.8), 0 0 10px rgba(255,255,255,0.4); }
+        }
+
+        @keyframes colorShift {
+            0% { color: #ffffff; }
+            50% { color: #ff3366; }
+            100% { color: #ffb6c1; }
+        }
+
+        @keyframes pulseGlow {
+            0% { text-shadow: 0 0 5px #ff0044; transform: scale(1); }
+            100% { text-shadow: 0 0 20px #ff0044, 0 0 30px #ff3366; transform: scale(1.1); }
+        }
+
+        .btn-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            z-index: 300;
+        }
+
+        .enter-btn {
+            display: inline-block;
+            padding: 15px 35px;
+            font-size: clamp(1rem, 3vw, 1.8rem);
+            color: #ffffff;
+            border: 2px solid #ff3366;
+            border-radius: 50px;
+            background: rgba(255, 51, 102, 0.3);
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+            opacity: 0;
+            visibility: hidden;
+            animation: 
+                entranceFlip 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 35s forwards,
+                pulseEffect 2s ease-in-out 36.5s infinite;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+            transition: 0.3s;
+        }
+
+        .enter-btn:hover {
+            background: #ffffff;
+            color: #ff3366;
+            border-color: #ffffff;
+        }
+
+        @keyframes entranceFlip {
+            0% { opacity: 0; transform: scale(0.1) rotateX(-540deg); visibility: visible; }
+            100% { opacity: 1; transform: scale(1) rotateX(0deg); visibility: visible; }
+        }
+
+        #skip-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-transform: uppercase;
+        }
+
+        #skip-btn:hover { background: #ff3366; color: white; border-color: #ff3366; }
+
+        @keyframes pulseEffect {
+            0% { box-shadow: 0 0 15px rgba(255, 51, 102, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 35px rgba(255, 51, 102, 0.8); transform: scale(1.03); }
+            100% { box-shadow: 0 0 15px rgba(255, 51, 102, 0.4); transform: scale(1); }
+        }
+
+        #player-frame {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            border: none;
+            transform-origin: center center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="top-brand">Ράδιο Σύννεφα - Radio Synnefa</div>
+
+    <img src="sinnefa.png" class="intro-img">
+
+    <button id="skip-btn" onclick="startRadioWithEffect()">Παράκαμψη Intro</button>
+
+    <div id="main-content" class="scroll-container">
+        <div class="scrolling-text">
+            <h2>ΕΔΩ ΠΟΥ Ο ΕΡΩΤΑΣ ΕΙΝΑΙ Η ΜΟΝΗ ΦΩΝΗ...</h2>
+            <p>Ξέχνα ό,τι ήξερες. Σβήσε τον υπόλοιπο κόσμο.<br>
+            Σε αυτή τη συχνότητα, δεν παίζουμε απλά τραγούδια...</p>
+            <span class="highlight">υμνούμε το ΠΑΘΟΣ</span>
+            <p>Εδώ κατοικεί μόνο ο Έρωτας.<br>
+            Κάθε νότα, κάθε ανάσα, κάθε στίχος είναι μια ιεροτελεστία<br>
+            που θα βρεις <strong>ΜΟΝΟ ΕΔΩ</strong>.</p>
+            <p>Μην ψάξεις αυτά τα τραγούδια πουθενά αλλού στον πλανήτη.</p>
+            <span class="highlight">Μόνο Ερωτικά • Μόνο Πάθος • Μόνο Εδώ</span>
+            <p>Καλώς ήρθες στο πιο ερωτικό ράδιο της καρδιάς σου...<br>
+            εκεί που η μουσική γδύνει την ψυχή.</p>
+        </div>
+
+        <div class="btn-container">
+            <button class="enter-btn" onclick="startRadioWithEffect()">Είσοδος στο Ραδιόφωνο</button>
+        </div>
+    </div>
+
+    <iframe id="player-frame" src=""></iframe>
+
+    <script>
+        let timeout;
+        const skipBtn = document.getElementById('skip-btn');
+        let isIntroFinished = false;
+
+        setTimeout(() => {
+            isIntroFinished = true;
+            skipBtn.style.display = 'none';
+        }, 35000);
+
+        document.addEventListener('mousemove', () => {
+            if (isIntroFinished) return;
+            skipBtn.style.opacity = '1';
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (!isIntroFinished) skipBtn.style.opacity = '0';
+            }, 3000);
+        });
+
+        function startRadioWithEffect() {
+            const mainContent = document.getElementById('main-content');
+            const skipBtn = document.getElementById('skip-btn');
+            const topBrand = document.getElementById('top-brand');
+            
+            mainContent.classList.add('cinematic-exit');
+            skipBtn.style.display = 'none';
+            topBrand.style.opacity = '0'; // Εξαφανίζει τον τίτλο ομαλά
+
+            setTimeout(() => {
+                isIntroFinished = true;
+                mainContent.style.display = 'none';
+                topBrand.style.display = 'none'; // Τον αφαιρεί τελείως από το DOM
+                
+                const introImg = document.querySelector('.intro-img');
+                if(introImg) introImg.style.display = 'none';
+                
+                const frame = document.getElementById('player-frame');
+                frame.src = "anigiautomata/automatoplayer.html";
+                frame.classList.add('player-entrance'); 
+            }, 1000);
+        }
+    </script>
+	<script src="lock.js"></script>
+</body>
+</html>

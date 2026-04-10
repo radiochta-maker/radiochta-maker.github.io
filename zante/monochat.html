@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Screen Iframe</title>
+    <style>
+        /* Αφαιρούμε τα προεπιλεγμένα περιθώρια του browser */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Κρύβει τα scrollbars της κύριας σελίδας */
+        }
+
+        /* Ρυθμίζουμε το iframe να γεμίσει όλο το διαθέσιμο χώρο */
+        .fullscreen-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <iframe src="https://minnit.chat/RadioSynnefa?embed&popout=hide" class="fullscreen-iframe"></iframe>
+        <script src="lock.js"></script>         
+</body>
+</html>
