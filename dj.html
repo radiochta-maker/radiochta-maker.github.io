@@ -2,80 +2,82 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Radio Sync Test (3 Users)</title>
+    <title>Radio Sync FINAL</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .stat-box { background: #1a1a1a; padding: 30px; border-radius: 20px; display: inline-block; border: 2px solid #333; }
-        #counter { font-size: 70px; color: #00ff00; font-weight: bold; line-height: 1; }
-        .label { color: #666; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
-        .msg { margin-top: 20px; font-size: 1.1em; color: #f39c12; min-height: 1.5em; }
-        audio { margin-top: 25px; width: 300px; }
+        .box { border: 2px solid #333; padding: 30px; border-radius: 15px; display: inline-block; background: #111; }
+        #counter { font-size: 60px; color: #00ff00; }
+        .status { margin-top: 15px; color: #f39c12; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="stat-box">
-        <div class="label">Ακροατές αυτή τη στιγμή</div>
+    <div class="box">
+        <div>ΑΚΡΟΑΤΕΣ ONLINE</div>
         <div id="counter">0</div>
         
-        <audio id="radio" controls autoplay>
+        <audio id="player" controls autoplay>
             <source src="https://radio.nitro-server.uk/listen/radiotrela/radio.mp3" type="audio/mpeg">
         </audio>
 
-        <div id="status" class="msg">Περιμένοντας σύνδεση...</div>
+        <div id="msg" class="status">Αναμονή...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script>
-        const audio = document.getElementById('radio');
-        const counter = document.getElementById('counter');
-        const status = document.getElementById('status');
+        const audio = document.getElementById('player');
+        const counterDisplay = document.getElementById('counter');
+        const msg = document.getElementById('msg');
 
         const link1 = "https://radio.nitro-server.uk/listen/radiotrela/radio.mp3";
         const link2 = "https://stream.zeno.fm/x8gduy6xd48uv";
 
-        // Σύνδεση στη βάση (Χρησιμοποιούμε ένα μοναδικό κλειδί 'radiotrela_test_room')
         const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        const radioApp = gun.get('radiotrela_test_room_33');
+        const radio = gun.get('radiotrela_final_v1');
 
-        // Κάθε φορά που ανοίγεις tab, δημιουργείται νέο ID για το τεστ
-        const myTabId = 'user_' + Math.random().toString(36).substr(2, 9);
+        const myId = 'u_' + Math.random().toString(36).substr(2, 9);
 
-        // Μπαίνουμε live
-        radioApp.get('listeners').get(myTabId).put(true);
+        // 1. Καταγραφή χρήστη
+        radio.get('users').get(myId).put(true);
+        window.onbeforeunload = () => radio.get('users').get(myId).put(null);
 
-        // Βγαίνουμε όταν κλείσει το tab
-        window.addEventListener('beforeunload', function() {
-            radioApp.get('listeners').get(myTabId).put(null);
-        });
-
-        // Έλεγχος σε πραγματικό χρόνο
-        radioApp.get('listeners').map().on(function(data, id) {
-            radioApp.get('listeners').once(function(all) {
+        // 2. Μηχανισμός Μετρητή και Απόφασης
+        radio.get('users').map().on(function() {
+            radio.get('users').once(function(all) {
                 let total = 0;
-                for(let key in all) {
-                    if(all[key] === true) total++;
-                }
+                for(let key in all) { if(all[key] === true) total++; }
+                
+                counterDisplay.innerText = total;
 
-                counter.innerText = total;
-
-                // ΕΔΩ ΕΙΝΑΙ Η ΡΥΘΜΙΣΗ ΓΙΑ ΤΑ 3 ΑΤΟΜΑ
+                // Ο 1ος χρήστης που θα δει το 3, θα "ρίξει" τον παγκόσμιο διακόπτη
                 if (total >= 3) {
-                    if (audio.src !== link2) {
-                        audio.src = link2;
-                        audio.play();
-                        status.innerText = "ΟΡΙΟ 3 ΑΤΟΜΩΝ: Παίζει το Zeno FM!";
-                        status.style.color = "#ff4d4d";
-                    }
+                    radio.get('switch').put({ active: true });
                 } else {
-                    if (audio.src !== link1) {
-                        audio.src = link1;
-                        audio.play();
-                        status.innerText = "ΑΝΑΜΟΝΗ: Χρειάζονται 3 άτομα για αλλαγή...";
-                        status.style.color = "#f39c12";
-                    }
+                    radio.get('switch').put({ active: false });
                 }
             });
+        });
+
+        // 3. Ο ΠΑΓΚΟΣΜΙΟΣ ΔΙΑΚΟΠΤΗΣ (Αυτόν "ακούνε" όλοι οι browsers)
+        radio.get('switch').on(function(data) {
+            if (data.active === true) {
+                if (audio.src !== link2) {
+                    console.log("Εντολή αλλαγής ελήφθη!");
+                    audio.src = link2;
+                    audio.load(); // Αναγκάζει τον browser να ξαναφορτώσει το νέο link
+                    audio.play().catch(e => console.log("Περιμένω κλικ του χρήστη για ήχο"));
+                    msg.innerText = "LIVE: ZENO FM";
+                    msg.style.color = "red";
+                }
+            } else {
+                if (audio.src !== link1) {
+                    audio.src = link1;
+                    audio.load();
+                    audio.play();
+                    msg.innerText = "Αναμονή για 3 άτομα...";
+                    msg.style.color = "#f39c12";
+                }
+            }
         });
     </script>
 </body>
