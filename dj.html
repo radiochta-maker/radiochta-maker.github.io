@@ -2,77 +2,77 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Radio Live Switcher - Global</title>
+    <title>Radio Sync Test (3 Users)</title>
     <style>
-        body { background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; padding-top: 100px; }
-        .box { border: 2px solid #333; padding: 40px; border-radius: 20px; display: inline-block; background: #111; }
-        #count { font-size: 50px; color: #00ff00; display: block; }
-        .status { margin-top: 20px; font-weight: bold; font-size: 1.2em; color: #aaa; }
-        audio { margin-top: 30px; filter: invert(100%); }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .stat-box { background: #1a1a1a; padding: 30px; border-radius: 20px; display: inline-block; border: 2px solid #333; }
+        #counter { font-size: 70px; color: #00ff00; font-weight: bold; line-height: 1; }
+        .label { color: #666; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+        .msg { margin-top: 20px; font-size: 1.1em; color: #f39c12; min-height: 1.5em; }
+        audio { margin-top: 25px; width: 300px; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <span id="count">0</span>
-        <div style="font-size: 14px; color: #666;">ΑΚΡΟΑΤΕΣ ONLINE</div>
-
-        <audio id="player" controls autoplay>
+    <div class="stat-box">
+        <div class="label">Ακροατές αυτή τη στιγμή</div>
+        <div id="counter">0</div>
+        
+        <audio id="radio" controls autoplay>
             <source src="https://radio.nitro-server.uk/listen/radiotrela/radio.mp3" type="audio/mpeg">
         </audio>
 
-        <div id="msg" class="status">Παίζει: Link 1 (Nitro)</div>
+        <div id="status" class="msg">Περιμένοντας σύνδεση...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script>
-        const audio = document.getElementById('player');
-        const countDisplay = document.getElementById('count');
-        const msg = document.getElementById('msg');
-        
-        const l1 = "https://radio.nitro-server.uk/listen/radiotrela/radio.mp3";
-        const l2 = "https://stream.zeno.fm/x8gduy6xd48uv";
+        const audio = document.getElementById('radio');
+        const counter = document.getElementById('counter');
+        const status = document.getElementById('status');
 
-        // Σύνδεση σε δημόσιο relay server
+        const link1 = "https://radio.nitro-server.uk/listen/radiotrela/radio.mp3";
+        const link2 = "https://stream.zeno.fm/x8gduy6xd48uv";
+
+        // Σύνδεση στη βάση (Χρησιμοποιούμε ένα μοναδικό κλειδί 'radiotrela_test_room')
         const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        const liveStatus = gun.get('radiotrela_12345').get('users');
+        const radioApp = gun.get('radiotrela_test_room_33');
 
-        // Δημιουργία τυχαίου ID για κάθε χρήστη που μπαίνει
-        const myId = 'user_' + Math.random().toString(36).substr(2, 9);
+        // Κάθε φορά που ανοίγεις tab, δημιουργείται νέο ID για το τεστ
+        const myTabId = 'user_' + Math.random().toString(36).substr(2, 9);
 
-        // Δηλώνουμε ότι είμαστε Online
-        liveStatus.get(myId).put(true);
+        // Μπαίνουμε live
+        radioApp.get('listeners').get(myTabId).put(true);
 
-        // Όταν κάποιος κλείνει το tab, σβήνεται από τη λίστα
-        window.addEventListener('beforeunload', () => {
-            liveStatus.get(myId).put(null);
+        // Βγαίνουμε όταν κλείσει το tab
+        window.addEventListener('beforeunload', function() {
+            radioApp.get('listeners').get(myTabId).put(null);
         });
 
-        // Παρακολούθηση αλλαγών (Πραγματικός Χρόνος)
-        liveStatus.map().on((val, id) => {
-            // Μόλις αλλάξει κάτι, μετράμε πόσοι είναι true
-            liveStatus.once((data) => {
+        // Έλεγχος σε πραγματικό χρόνο
+        radioApp.get('listeners').map().on(function(data, id) {
+            radioApp.get('listeners').once(function(all) {
                 let total = 0;
-                for(let key in data) {
-                    if(data[key] === true) total++;
+                for(let key in all) {
+                    if(all[key] === true) total++;
                 }
-                
-                countDisplay.innerText = total;
 
-                // Η ΑΛΛΑΓΗ ΣΤΑ 10 ΑΤΟΜΑ
-                if (total >= 10) {
-                    if (audio.src !== l2) {
-                        audio.src = l2;
+                counter.innerText = total;
+
+                // ΕΔΩ ΕΙΝΑΙ Η ΡΥΘΜΙΣΗ ΓΙΑ ΤΑ 3 ΑΤΟΜΑ
+                if (total >= 3) {
+                    if (audio.src !== link2) {
+                        audio.src = link2;
                         audio.play();
-                        msg.innerText = "ΑΛΛΑΓΗ: Παίζει το Link 2 (Zeno)";
-                        msg.style.color = "#ff0000";
+                        status.innerText = "ΟΡΙΟ 3 ΑΤΟΜΩΝ: Παίζει το Zeno FM!";
+                        status.style.color = "#ff4d4d";
                     }
                 } else {
-                    if (audio.src !== l1) {
-                        audio.src = l1;
+                    if (audio.src !== link1) {
+                        audio.src = link1;
                         audio.play();
-                        msg.innerText = "Παίζει: Link 1 (Nitro)";
-                        msg.style.color = "#aaa";
+                        status.innerText = "ΑΝΑΜΟΝΗ: Χρειάζονται 3 άτομα για αλλαγή...";
+                        status.style.color = "#f39c12";
                     }
                 }
             });
