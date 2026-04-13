@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Live Streaming Multi-Server</title>
+  <title>Live Streaming Multi-Server Fullscreen</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     html, body {
@@ -12,6 +12,7 @@
       overflow: hidden;
       font-family: sans-serif;
     }
+    /* Το δοχείο που περιέχει τα πάντα */
     #playerContainer {
       position: relative;
       width: 100%; height: 100%;
@@ -26,6 +27,7 @@
     }
     video::-webkit-media-controls { display:none !important; }
     
+    /* Στυλ για τα κουμπιά */
     .controls {
       position: absolute;
       bottom: 20px; right: 20px;
@@ -44,8 +46,11 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      outline: none;
+      user-select: none;
+      transition: 0.3s;
     }
+    .control-btn:hover { background: rgba(255,255,255,0.3); }
+
     #statusMessage {
       position: absolute;
       top: 20px; left: 20px;
@@ -62,10 +67,12 @@
 
 <div id="playerContainer">
   <video id="player" autoplay muted playsinline></video>
+  
   <div id="statusMessage">🔄 Έλεγχος σύνδεσης…</div>
+  
   <div class="controls">
-    <button id="unmuteBtn" class="control-btn">🔇</button>
-    <button id="fullscreenBtn" class="control-btn">⛶</button>
+    <button id="unmuteBtn" class="control-btn" title="Ήχος">🔇</button>
+    <button id="fullscreenBtn" class="control-btn" title="Πλήρης οθόνη">⛶</button>
   </div>
 </div>
 
@@ -86,19 +93,24 @@ let hls = null;
 let currentActiveUrl = ""; 
 let testingLive = false;
 
-// Fullscreen Logic
+// Λειτουργία Fullscreen
 fullscreenBtn.addEventListener("click", () => {
   if (!document.fullscreenElement) {
-    container.requestFullscreen().catch(err => console.log(err));
-    fullscreenBtn.textContent = "✖";
+    container.requestFullscreen().catch(err => {
+      alert(`Σφάλμα: ${err.message}`);
+    });
+    fullscreenBtn.textContent = "✖"; // Σύμβολο για κλείσιμο
   } else {
     document.exitFullscreen();
     fullscreenBtn.textContent = "⛶";
   }
 });
 
+// Παρακολούθηση αλλαγής fullscreen (π.χ. αν πατήσει Esc)
 document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶";
+  if (!document.fullscreenElement) {
+    fullscreenBtn.textContent = "⛶";
+  }
 });
 
 function playStream(url) {
@@ -128,38 +140,39 @@ function playStream(url) {
   }
 }
 
-// ΝΕΑ ΜΕΘΟΔΟΣ ΕΛΕΓΧΟΥ (Χωρίς να γυρνάει το κυκλάκι στο tab)
-async function checkUrl(url) {
-  try {
-    // Κάνουμε ένα γρήγορο αίτημα για να δούμε αν το αρχείο υπάρχει
-    const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-    // Στα live streams με no-cors δεν μπορούμε να δούμε το status (0), 
-    // οπότε χρησιμοποιούμε ένα μικρό fetch για τα πρώτα bytes
-    const probe = await fetch(url, { method: 'GET', mode: 'no-cors' });
-    return true; 
-  } catch (e) {
-    return false;
-  }
+function checkUrl(url) {
+  return new Promise((resolve) => {
+    let tempVideo = document.createElement("video");
+    tempVideo.muted = true;
+    let played = false;
+    let timeout = setTimeout(() => {
+      if (!played) { tempVideo.src = ""; tempVideo.remove(); resolve(false); }
+    }, 7000);
+
+    tempVideo.onplaying = () => {
+      played = true;
+      clearTimeout(timeout);
+      tempVideo.src = ""; tempVideo.remove();
+      resolve(true);
+    };
+    tempVideo.onerror = () => {
+      clearTimeout(timeout);
+      tempVideo.src = ""; tempVideo.remove();
+      resolve(false);
+    };
+    tempVideo.src = url;
+    tempVideo.play().catch(() => {});
+  });
 }
 
 async function updateStream() {
   if (testingLive) return;
   testingLive = true;
-  
   let foundLiveUrl = null;
 
   for (let url of mainServers) {
-    // Χρησιμοποιούμε fetch probe αντί για video element
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        await fetch(url, { mode: 'no-cors', signal: controller.signal });
-        clearTimeout(timeoutId);
-        foundLiveUrl = url;
-        break;
-    } catch (e) {
-        // Συνέχισε στον επόμενο
-    }
+    const isOk = await checkUrl(url);
+    if (isOk) { foundLiveUrl = url; break; }
   }
 
   if (foundLiveUrl) {
@@ -177,10 +190,8 @@ unmuteBtn.addEventListener("click", () => {
   unmuteBtn.textContent = video.muted ? "🔇" : "🔊";
 });
 
-// Αρχική εκκίνηση
 updateStream();
-// Έλεγχος κάθε 30 δευτερόλεπτα
-setInterval(() => updateStream(), 30000);
+setInterval(() => updateStream(), 25000);
 </script>
 
 </body>
