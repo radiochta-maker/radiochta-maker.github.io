@@ -1,29 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <title>Radio Player</title>
-</head>
-<body style="background:#000; color:#fff; text-align:center;">
-    <h3>Radio Player</h3>
-    <audio id="radio" controls autoplay src="https://radio.nitro-server.uk/listen/radiotrela/radio.mp3"></audio>
+  <meta charset="UTF-8" />
+  <title>Live Streaming Multi-Server Fullscreen</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      background: black;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    /* Το δοχείο που περιέχει τα πάντα */
+    #playerContainer {
+      position: relative;
+      width: 100%; height: 100%;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    video {
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+    video::-webkit-media-controls { display:none !important; }
     
-    <script>
-        const audio = document.getElementById('radio');
-        const link2 = "https://stream.zeno.fm/x8gduy6xd48uv";
+    /* Στυλ για τα κουμπιά */
+    .controls {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+    .control-btn {
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 45px; height: 45px;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      transition: 0.3s;
+    }
+    .control-btn:hover { background: rgba(255,255,255,0.3); }
 
-        // Αντί για περίπλοκα συστήματα, βάλε αυτόν τον κώδικα 
-        // να ελέγχει ΜΟΝΟ αν το δεύτερο link είναι ενεργό.
-        // Μόλις εσύ ανοίξεις το Zeno, ο player θα γυρίσει εκεί.
-        
-        setInterval(function() {
-            fetch(link2, { mode: 'no-cors' }).then(() => {
-                if (audio.src !== link2) {
-                    audio.src = link2;
-                    audio.play();
-                }
-            });
-        }, 5000);
-    </script>
+    #statusMessage {
+      position: absolute;
+      top: 20px; left: 20px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 8px 14px;
+      font-size: 16px;
+      border-radius: 8px;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+<div id="playerContainer">
+  <video id="player" autoplay muted playsinline></video>
+  
+  <div id="statusMessage">🔄 Έλεγχος σύνδεσης…</div>
+  
+  <div class="controls">
+    <button id="unmuteBtn" class="control-btn" title="Ήχος">🔇</button>
+    <button id="fullscreenBtn" class="control-btn" title="Πλήρης οθόνη">⛶</button>
+  </div>
+</div>
+
+<script>
+const mainServers = [
+  "https://live20.bozztv.com/akamaissh101/ssh101/radiotvtrela/playlist.m3u8",
+  "https://edge1-eu-west.picarto.tv/stream/golive%2bzakynthos.mp4"
+];
+const fallbackUrl = "https://stream.gumlet.io/67a9d3a3feefe705cbda86f6/68023cd93f934d7b33b9ecc7/main.m3u8";
+
+const video = document.getElementById("player");
+const container = document.getElementById("playerContainer");
+const unmuteBtn = document.getElementById("unmuteBtn");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const statusMessage = document.getElementById("statusMessage");
+
+let hls = null;
+let currentActiveUrl = ""; 
+let testingLive = false;
+
+// Λειτουργία Fullscreen
+fullscreenBtn.addEventListener("click", () => {
+  if (!document.fullscreenElement) {
+    container.requestFullscreen().catch(err => {
+      alert(`Σφάλμα: ${err.message}`);
+    });
+    fullscreenBtn.textContent = "✖"; // Σύμβολο για κλείσιμο
+  } else {
+    document.exitFullscreen();
+    fullscreenBtn.textContent = "⛶";
+  }
+});
+
+// Παρακολούθηση αλλαγής fullscreen (π.χ. αν πατήσει Esc)
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    fullscreenBtn.textContent = "⛶";
+  }
+});
+
+function playStream(url) {
+  if (currentActiveUrl === url) return;
+  currentActiveUrl = url;
+
+  if (hls) {
+    hls.detachMedia();
+    hls.destroy();
+    hls = null;
+  }
+
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+
+  if (Hls.isSupported() && url.includes("m3u8")) {
+    hls = new Hls({ manifestLoadingRetryDelay: 1000, manifestLoadingMaxRetry: 6 });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
+    hls.on(Hls.Events.ERROR, (event, data) => { if (data.fatal) updateStream(); });
+  } 
+  else {
+    video.src = url;
+    video.play().catch(() => {});
+  }
+}
+
+function checkUrl(url) {
+  return new Promise((resolve) => {
+    let tempVideo = document.createElement("video");
+    tempVideo.muted = true;
+    let played = false;
+    let timeout = setTimeout(() => {
+      if (!played) { tempVideo.src = ""; tempVideo.remove(); resolve(false); }
+    }, 7000);
+
+    tempVideo.onplaying = () => {
+      played = true;
+      clearTimeout(timeout);
+      tempVideo.src = ""; tempVideo.remove();
+      resolve(true);
+    };
+    tempVideo.onerror = () => {
+      clearTimeout(timeout);
+      tempVideo.src = ""; tempVideo.remove();
+      resolve(false);
+    };
+    tempVideo.src = url;
+    tempVideo.play().catch(() => {});
+  });
+}
+
+async function updateStream() {
+  if (testingLive) return;
+  testingLive = true;
+  let foundLiveUrl = null;
+
+  for (let url of mainServers) {
+    const isOk = await checkUrl(url);
+    if (isOk) { foundLiveUrl = url; break; }
+  }
+
+  if (foundLiveUrl) {
+    statusMessage.textContent = "🔴 Ζωντανά τώρα";
+    playStream(foundLiveUrl);
+  } else {
+    statusMessage.textContent = "🎬 Παρακολουθείτε video clip";
+    playStream(fallbackUrl);
+  }
+  testingLive = false;
+}
+
+unmuteBtn.addEventListener("click", () => {
+  video.muted = !video.muted;
+  unmuteBtn.textContent = video.muted ? "🔇" : "🔊";
+});
+
+updateStream();
+setInterval(() => updateStream(), 25000);
+</script>
+
 </body>
 </html>
