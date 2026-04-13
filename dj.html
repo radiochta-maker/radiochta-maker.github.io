@@ -26,6 +26,34 @@
     }
     video::-webkit-media-controls { display:none !important; }
     
+    #loadingOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      color: white;
+    }
+
+    .spinner {
+      border: 6px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 6px solid #ffffff;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     .controls {
       position: absolute;
       bottom: 20px; right: 20px;
@@ -64,8 +92,15 @@
 <body>
 
 <div id="playerContainer">
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText" style="font-size: 18px;">Φόρτωση live streaming...</div>
+  </div>
+
   <video id="player" autoplay muted playsinline></video>
+  
   <div id="statusMessage">🔄 Έλεγχος σύνδεσης…</div>
+  
   <div class="controls">
     <button id="unmuteBtn" class="control-btn" title="Ήχος">🔇</button>
     <button id="fullscreenBtn" class="control-btn" title="Πλήρης οθόνη">⛶</button>
@@ -84,10 +119,38 @@ const container = document.getElementById("playerContainer");
 const unmuteBtn = document.getElementById("unmuteBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const statusMessage = document.getElementById("statusMessage");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const loadingText = document.getElementById("loadingText");
 
 let hls = null;
 let currentActiveUrl = ""; 
 let testingLive = false;
+let isSwitching = false;
+
+// Μεταβλητές για τον έλεγχο παγώματος
+let lastPlayPos = 0;
+let checkInterval = null;
+
+// WATCHDOG: Ελέγχει αν η εικόνα προχωράει
+function startWatchdog() {
+    stopWatchdog();
+    checkInterval = setInterval(() => {
+        // Αν παίζει το Live και η ώρα του βίντεο είναι ίδια με πριν
+        if (currentActiveUrl !== fallbackUrl && currentActiveUrl !== "" && !video.paused) {
+            if (video.currentTime === lastPlayPos) {
+                console.log("Ανιχνεύθηκε πάγωμα εικόνας. Αλλαγή σε backup...");
+                currentActiveUrl = "";
+                stopWatchdog();
+                updateStream();
+            }
+            lastPlayPos = video.currentTime;
+        }
+    }, 3000); // Έλεγχος κάθε 3 δευτερόλεπτα
+}
+
+function stopWatchdog() {
+    if (checkInterval) clearInterval(checkInterval);
+}
 
 fullscreenBtn.addEventListener("click", () => {
   if (!document.fullscreenElement) {
@@ -101,14 +164,16 @@ fullscreenBtn.addEventListener("click", () => {
   }
 });
 
-document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) {
-    fullscreenBtn.textContent = "⛶";
-  }
-});
-
 function playStream(url) {
-  if (currentActiveUrl === url) return;
+  if (currentActiveUrl === url && video.readyState >= 3) return;
+
+  if (currentActiveUrl !== "" && currentActiveUrl !== fallbackUrl && url === fallbackUrl) {
+    showOverlay("Το Live Stream τελείωσε", 3000);
+  } 
+  else if (url !== fallbackUrl) {
+    showOverlay("Φόρτωση live streaming...", 0);
+  }
+
   currentActiveUrl = url;
 
   if (hls) {
@@ -125,12 +190,45 @@ function playStream(url) {
     hls = new Hls({ manifestLoadingRetryDelay: 1000, manifestLoadingMaxRetry: 6 });
     hls.loadSource(url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
-    hls.on(Hls.Events.ERROR, (event, data) => { if (data.fatal) updateStream(); });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { 
+      video.play().then(() => {
+        if (loadingText.textContent !== "Το Live Stream τελείωσε") {
+          loadingOverlay.style.display = "none";
+        }
+        startWatchdog();
+      }).catch(() => {
+        loadingOverlay.style.display = "none";
+      }); 
+    });
+    hls.on(Hls.Events.ERROR, (event, data) => { 
+      if (data.fatal) {
+        currentActiveUrl = "";
+        updateStream(); 
+      }
+    });
   } 
   else {
     video.src = url;
-    video.play().catch(() => {});
+    video.play().then(() => {
+        if (loadingText.textContent !== "Το Live Stream τελείωσε") {
+          loadingOverlay.style.display = "none";
+        }
+        startWatchdog();
+    }).catch(() => {
+        loadingOverlay.style.display = "none";
+    });
+  }
+}
+
+function showOverlay(text, duration) {
+  loadingText.textContent = text;
+  loadingOverlay.style.display = "flex";
+  if (duration > 0) {
+    isSwitching = true;
+    setTimeout(() => {
+      loadingOverlay.style.display = "none";
+      isSwitching = false;
+    }, duration);
   }
 }
 
@@ -181,7 +279,7 @@ function checkUrl(url) {
 }
 
 async function updateStream() {
-  if (testingLive) return;
+  if (testingLive || isSwitching) return;
   testingLive = true;
   let foundLiveUrl = null;
 
@@ -206,7 +304,7 @@ unmuteBtn.addEventListener("click", () => {
 });
 
 updateStream();
-setInterval(() => updateStream(), 25000);
+setInterval(() => updateStream(), 20000);
 </script>
 
 </body>
