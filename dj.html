@@ -12,7 +12,6 @@
       overflow: hidden;
       font-family: sans-serif;
     }
-    /* Το δοχείο που περιέχει τα πάντα */
     #playerContainer {
       position: relative;
       width: 100%; height: 100%;
@@ -27,7 +26,6 @@
     }
     video::-webkit-media-controls { display:none !important; }
     
-    /* Στυλ για τα κουμπιά */
     .controls {
       position: absolute;
       bottom: 20px; right: 20px;
@@ -67,9 +65,7 @@
 
 <div id="playerContainer">
   <video id="player" autoplay muted playsinline></video>
-  
   <div id="statusMessage">🔄 Έλεγχος σύνδεσης…</div>
-  
   <div class="controls">
     <button id="unmuteBtn" class="control-btn" title="Ήχος">🔇</button>
     <button id="fullscreenBtn" class="control-btn" title="Πλήρης οθόνη">⛶</button>
@@ -93,20 +89,18 @@ let hls = null;
 let currentActiveUrl = ""; 
 let testingLive = false;
 
-// Λειτουργία Fullscreen
 fullscreenBtn.addEventListener("click", () => {
   if (!document.fullscreenElement) {
     container.requestFullscreen().catch(err => {
       alert(`Σφάλμα: ${err.message}`);
     });
-    fullscreenBtn.textContent = "✖"; // Σύμβολο για κλείσιμο
+    fullscreenBtn.textContent = "✖";
   } else {
     document.exitFullscreen();
     fullscreenBtn.textContent = "⛶";
   }
 });
 
-// Παρακολούθηση αλλαγής fullscreen (π.χ. αν πατήσει Esc)
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement) {
     fullscreenBtn.textContent = "⛶";
@@ -144,22 +138,43 @@ function checkUrl(url) {
   return new Promise((resolve) => {
     let tempVideo = document.createElement("video");
     tempVideo.muted = true;
-    let played = false;
+    let finished = false;
+
     let timeout = setTimeout(() => {
-      if (!played) { tempVideo.src = ""; tempVideo.remove(); resolve(false); }
+      if (!finished) {
+        finished = true;
+        tempVideo.pause();
+        tempVideo.src = "";
+        tempVideo.load();
+        tempVideo.remove();
+        resolve(false);
+      }
     }, 7000);
 
     tempVideo.onplaying = () => {
-      played = true;
-      clearTimeout(timeout);
-      tempVideo.src = ""; tempVideo.remove();
-      resolve(true);
+      if (!finished) {
+        finished = true;
+        clearTimeout(timeout);
+        tempVideo.pause();
+        tempVideo.src = "";
+        tempVideo.load();
+        tempVideo.remove();
+        resolve(true);
+      }
     };
+
     tempVideo.onerror = () => {
-      clearTimeout(timeout);
-      tempVideo.src = ""; tempVideo.remove();
-      resolve(false);
+      if (!finished) {
+        finished = true;
+        clearTimeout(timeout);
+        tempVideo.pause();
+        tempVideo.src = "";
+        tempVideo.load();
+        tempVideo.remove();
+        resolve(false);
+      }
     };
+
     tempVideo.src = url;
     tempVideo.play().catch(() => {});
   });
