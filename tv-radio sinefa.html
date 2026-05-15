@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VDO.Ninja Fullscreen Player with Custom Background</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            /* Η ΦΩΤΟΓΡΑΦΙΑ ΣΟΥ ΩΣ ΦΟΝΤΟ ΣΕ ΟΛΗ ΤΗ ΣΕΛΙΔΑ */
+            background-color: #000;
+            background-image: url('https://i.imgur.com/1MdMJho.png');
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .player-fullscreen {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Τα iframe και βίντεο έχουν ομαλό transition (0.5 δευτερόλεπτα) για να φαίνεται το φόντο ενδιάμεσα */
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            z-index: 2;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .backup-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Εναλλαγή επιπέδων */
+        .show-live iframe { z-index: 3; opacity: 1; }
+        .show-live .backup-video { z-index: 1; opacity: 0; }
+        
+        /* ΔΙΟΡΘΩΣΗ: Αφαιρεί τη φωτογραφία (γίνεται μαύρο) ΜΟΝΟ όταν παίζει το live stream */
+        .show-live { background-image: none !important; }
+
+        .show-backup iframe { z-index: 1; opacity: 0; }
+        .show-backup .backup-video { z-index: 3; opacity: 1; }
+
+        /* Όταν ψάχνει για live στην αρχή ή στην αλλαγή, κρύβει και τα δύο για να φανεί η κάρτα σου */
+        .show-loading iframe { z-index: 1; opacity: 0; }
+        .show-loading .backup-video { z-index: 1; opacity: 0; }
+
+        .mouse-tracker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            background: transparent;
+        }
+
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            align-items: center;
+            padding-left: 30px;
+            padding-bottom: 20px;
+            pointer-events: none; 
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 10;
+            gap: 15px;
+        }
+
+        .player-controls.visible {
+            opacity: 1;
+        }
+
+        .fullscreen-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .fullscreen-btn:active {
+            transform: translateY(0);
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 0 24px;
+            height: 48px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 140px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .live-notice {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #ffffff;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            z-index: 15;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+
+        /* ΕΝΔΕΙΞΗ LIVE ΠΑΝΩ ΔΕΞΙΑ */
+        .live-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.85);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 100;
+            display: none; 
+            text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Η ΑΣΠΡΗ ΚΟΥΚΙΔΑ ΠΟΥ ΑΝΑΒΟΣΒΗΝΕΙ */
+        .live-badge::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: blinker 1.2s cubic-bezier(.5, 0, 1, 1) infinite alternate;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes blinker {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0.2; transform: scale(0.8); }
+        }
+
+        .show-live .live-badge {
+            display: flex; /* Εμφανίζεται με flex για να στοιχιστεί η κουκίδα */
+        }
+    </style>
+</head>
+<body class="show-loading"> 
+    <div class="player-fullscreen" id="mainContainer">
+        <div class="live-badge">ΖΩΝΤΑΝΑ ΤΩΡΑ</div>
+
+        <div id="noticeMessage" class="live-notice">
+            Ράδιο Σύννεφα TV | Live Streaming.<br>Παρακαλούμε περιμένετε... Γίνεται φόρτωση του stream.
+        </div>
+
+        <div class="mouse-tracker" id="tracker"></div>
+
+        <video id="backupVideo" class="backup-video" src="https://res.cloudinary.com/dtiuiw8sp/video/upload/v1778706107/spot_radio_sinefa_tv_xatuhk.mp4" muted playsinline></video>
+
+        <iframe id="vdoPlayer" 
+                src="https://vdo.ninja/?view=SiDsgNa&cleanoutput&transparent&autoplay&api=1" 
+                allow="autoplay; autofocus; encrypted-media">
+        </iframe>
+
+        <div class="player-controls" id="playerControls">
+            <div class="volume-container">
+                <span id="volumeIcon">🔈</span>
+                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="0">
+            </div>
+            
+            <button id="fsToggle" class="fullscreen-btn">
+                <span id="fsIcon">📺</span> <span id="fsText">Πλήρης Οθόνη</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const iframe = document.getElementById('vdoPlayer');
+        const backupVideo = document.getElementById('backupVideo');
+        const controls = document.getElementById('playerControls');
+        const tracker = document.getElementById('tracker');
+        const container = document.getElementById('mainContainer');
+        const notice = document.getElementById('noticeMessage');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const fsButton = document.getElementById('fsToggle');
+        const fsIcon = document.getElementById('fsIcon');
+        const fsText = document.getElementById('fsText');
+
+        let hideTimeout;
+        const HIDE_DELAY_MS = 3000; 
+        let currentMode = "loading";
+        let lastMessageTime = Date.now();
+        let isFirstLoad = true;
+
+        const playlist = [
+            "https://res.cloudinary.com/dtiuiw8sp/video/upload/v1778706107/spot_radio_sinefa_tv_xatuhk.mp4", 
+            "https://res.cloudinary.com/dtiuiw8sp/video/upload/v1778689946/dokimisakis_rouvlp.mp4",        
+            "https://res.cloudinary.com/dtiuiw8sp/video/upload/v1756023318/spot2_djefej.mp4",                
+            "https://res.cloudinary.com/dtiuiw8sp/video/upload/v1755723079/download_l6ccgd.mp4",             
+            "https://video.gumlet.io/676da5bee52b1079305dbcd3/677839eaabb26867fdbf5938/download.mp4",       
+            "https://video.gumlet.io/676da5bee52b1079305dbcd3/67dc0c9d4c720203cbdded25/download.mp4"        
+        ];
+        let currentVideoIndex = 0;
+
+        backupVideo.addEventListener('ended', function() {
+            currentVideoIndex++;
+            if (currentVideoIndex >= playlist.length) {
+                currentVideoIndex = 0; 
+            }
+            backupVideo.src = playlist[currentVideoIndex];
+            
+            if (currentMode === "backup") {
+                backupVideo.play().catch(function(err){ console.log(err); });
+            }
+        });
+
+        function showControls() {
+            controls.classList.add('visible');
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(function() {
+                controls.classList.remove('visible');
+            }, HIDE_DELAY_MS);
+        }
+
+        tracker.addEventListener('mousemove', showControls);
+        controls.addEventListener('mousemove', showControls);
+        container.addEventListener('mousemove', showControls);
+        showControls();
+
+        setTimeout(function() {
+            notice.style.opacity = "0";
+        }, 7000);
+
+        function sendVdoCommand(command, value) {
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ [command]: value }, '*');
+            }
+        }
+
+        iframe.addEventListener('load', function() {
+            sendVdoCommand('mute', true);
+        });
+
+        window.addEventListener('message', function(e) {
+            if (!e.data) return;
+
+            lastMessageTime = Date.now();
+
+            if (e.data.action === 'video-loaded' || e.data.event === 'wfs-video-loaded' || e.data.streamID) {
+                if (currentMode !== "live") {
+                    currentMode = "live";
+                    document.body.className = "show-live";
+                    backupVideo.pause();
+                    isFirstLoad = false;
+                }
+            }
+
+            if (e.data.action === 'stream-dropped' || e.data.event === 'video-removed' || e.data.action === 'stopped') {
+                document.body.className = "show-loading"; 
+                setTimeout(function() {
+                    switchToBackup(true);
+                }, 1000);
+            }
+        });
+
+        function switchToBackup(isLiveClosure = false) {
+            currentMode = "backup";
+            document.body.className = "show-backup";
+
+            if (isFirstLoad) {
+                currentVideoIndex = 0;
+                backupVideo.src = playlist[0];
+                isFirstLoad = false; 
+            } 
+            else if (isLiveClosure) {
+                const randomIndex = Math.floor(Math.random() * (playlist.length - 1)) + 1;
+                currentVideoIndex = randomIndex;
+                backupVideo.src = playlist[currentVideoIndex];
+            }
+
+            backupVideo.play().catch(function(err) {
+                console.log("Autoplay μπλοκάρισμα:", err);
+            });
+        }
+
+        setTimeout(function() {
+            if (currentMode === "loading") {
+                sendVdoCommand('get_state', true); 
+                setTimeout(function() {
+                    if (currentMode === "loading" && (Date.now() - lastMessageTime > 3000)) {
+                        switchToBackup(false); 
+                    }
+                }, 1500);
+            }
+        }, 8000);
+
+        setInterval(function() {
+            if (currentMode === "live") {
+                sendVdoCommand('get_state', true);
+                if (Date.now() - lastMessageTime > 4000) {
+                    document.body.className = "show-loading"; 
+                    setTimeout(function() {
+                        switchToBackup(true);
+                    }, 1000);
+                }
+            }
+        }, 2000);
+
+        volumeSlider.addEventListener('input', function(e) {
+            e.stopPropagation();
+            showControls();
+            const volumeValue = volumeSlider.value;
+
+            if (volumeValue > 0) {
+                sendVdoCommand('mute', false);
+                sendVdoCommand('volume', volumeValue / 100);
+                
+                backupVideo.muted = false;
+                backupVideo.volume = volumeValue / 100;
+                
+                if (volumeValue < 40) volumeIcon.textContent = "🔈";
+                else if (volumeValue < 80) volumeIcon.textContent = "🔉";
+                else volumeIcon.textContent = "🔊";
+            } else {
+                sendVdoCommand('mute', true);
+                backupVideo.muted = true;
+                volumeIcon.textContent = "🔇";
+            }
+        });
+
+        volumeSlider.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        fsButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(function(err) {
+                    console.log("Σφάλμα Fullscreen: " + err.message);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+            showControls();
+        });
+
+        document.addEventListener('fullscreenchange', function() {
+            if (document.fullscreenElement) {
+                fsIcon.textContent = "🔄";
+                fsText.textContent = "Έξοδος από Πλήρη Οθόνη";
+            } else {
+                fsIcon.textContent = "📺";
+                fsText.textContent = "Πλήρης Οθόνη";
+            }
+        });
+    </script>
+
+</body>
+</html>
