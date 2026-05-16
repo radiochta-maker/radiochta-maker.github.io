@@ -34,7 +34,7 @@
             height: 100%;
             border: none;
             display: block;
-            object-fit: cover;
+            object-fit: contain; 
             transition: opacity 0.5s ease;
             opacity: 0;
         }
@@ -48,7 +48,8 @@
         .show-live-picarto #picartoPlayer { z-index: 3; opacity: 1; }
         .show-backup .backup-video { z-index: 3; opacity: 1; }
 
-        .show-live-vdo, .show-live-hls, .show-live-picarto { background-image: none !important; }
+        /* Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ: Προσθέσαμε το .show-backup για να κρύβει τη φωτογραφία φόντου */
+        .show-live-vdo, .show-live-hls, .show-live-picarto, .show-backup { background-image: none !important; }
         .show-loading iframe, .show-loading .live-video-element, .show-loading .backup-video { opacity: 0; z-index: 1; }
 
         .mouse-tracker {
