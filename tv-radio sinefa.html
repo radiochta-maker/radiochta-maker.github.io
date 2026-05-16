@@ -48,7 +48,6 @@
         .show-live-picarto #picartoPlayer { z-index: 3; opacity: 1; }
         .show-backup .backup-video { z-index: 3; opacity: 1; }
 
-        /* Η ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ: Προσθέσαμε το .show-backup για να κρύβει τη φωτογραφία φόντου */
         .show-live-vdo, .show-live-hls, .show-live-picarto, .show-backup { background-image: none !important; }
         .show-loading iframe, .show-loading .live-video-element, .show-loading .backup-video { opacity: 0; z-index: 1; }
 
@@ -121,6 +120,27 @@
             color: white;
             font-weight: 600;
             font-size: 16px;
+        }
+
+        .volume-container.pulse-attention {
+            animation: pulseSound 1.5s infinite alternate;
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.4);
+        }
+
+        @keyframes pulseSound {
+            from { transform: scale(1); background: rgba(0, 0, 0, 0.6); }
+            to { transform: scale(1.08); background: rgba(220, 53, 69, 0.85); }
+        }
+
+        /* ΑΛΛΑΓΗ: Κάνουμε το εικονίδιο του ήχου να φαίνεται σαν clickable κουμπί */
+        #volumeIcon {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+        #volumeIcon:active {
+            transform: scale(0.85);
         }
 
         .volume-slider {
@@ -228,7 +248,7 @@
         <video id="picartoPlayer" class="live-video-element" src="https://edge1-eu-west.picarto.tv/stream/golive%2bzakynthos.mp4" muted playsinline></video>
 
         <div class="player-controls" id="playerControls">
-            <div class="volume-container">
+            <div class="volume-container pulse-attention" id="volumeContainer">
                 <span id="volumeIcon">🔈</span>
                 <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="0">
             </div>
@@ -253,6 +273,7 @@
         const fsButton = document.getElementById('fsToggle');
         const fsIcon = document.getElementById('fsIcon');
         const fsText = document.getElementById('fsText');
+        const volumeContainer = document.getElementById('volumeContainer');
 
         let hideTimeout;
         const HIDE_DELAY_MS = 3000; 
@@ -264,7 +285,6 @@
         let isHlsActive = false;
         let isPicartoActive = false;
 
-        // Μεταβλητές για τον έλεγχο παγώματος χρόνου του Picarto
         let lastPicartoTime = -1;
         let picartoFreezeCounter = 0;
 
@@ -293,7 +313,9 @@
         function showControls() {
             controls.classList.add('visible');
             clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(function() { controls.classList.remove('visible'); }, HIDE_DELAY_MS);
+            if (!volumeContainer.classList.contains('pulse-attention')) {
+                hideTimeout = setTimeout(function() { controls.classList.remove('visible'); }, HIDE_DELAY_MS);
+            }
         }
 
         tracker.addEventListener('mousemove', showControls);
@@ -353,7 +375,6 @@
             }
         });
 
-        // Σήμα έναρξης Picarto
         picartoPlayer.addEventListener('playing', function() {
             isPicartoActive = true;
             picartoFreezeCounter = 0; 
@@ -365,20 +386,17 @@
             evaluateStreamPriority();
         });
 
-        // ΣΚΛΗΡΟΣ ΕΛΕΓΧΟΣ ΠΑΓΩΜΑΤΟΣ (Κάθε 1 δευτερόλεπτο)
         setInterval(function() {
             if (currentMode === "live-picarto") {
-                // Αν ο τρέχων χρόνος του βίντεο είναι ο ίδιος με τον προηγούμενο, σημαίνει ότι πάγωσε
                 if (picartoPlayer.currentTime === lastPicartoTime) {
                     picartoFreezeCounter++;
-                    // Αν μείνει παγωμένο για 3 συνεχόμενα δευτερόλεπτα
                     if (picartoFreezeCounter >= 3) {
                         isPicartoActive = false;
                         picartoFreezeCounter = 0;
-                        evaluateStreamPriority(); // Αναγκαστική αλλαγή ροής
+                        evaluateStreamPriority(); 
                     }
                 } else {
-                    picartoFreezeCounter = 0; // Το βίντεο προχωράει κανονικά
+                    picartoFreezeCounter = 0; 
                 }
                 lastPicartoTime = picartoPlayer.currentTime;
             }
@@ -470,10 +488,8 @@
             }
         }, 12000);
 
-        volumeSlider.addEventListener('input', function(e) {
-            e.stopPropagation();
-            showControls();
-            const volumeValue = volumeSlider.value;
+        // Συνάρτηση για την εφαρμογή της έντασης σε όλα τα players
+        function updateAllVolumes(volumeValue) {
             const volumeRatio = volumeValue / 100;
 
             if (volumeValue > 0) {
@@ -499,6 +515,22 @@
                 picartoPlayer.muted = true;
                 volumeIcon.textContent = "🔇";
             }
+        }
+
+        volumeSlider.addEventListener('input', function(e) {
+            e.stopPropagation();
+            volumeContainer.classList.remove('pulse-attention');
+            showControls();
+            updateAllVolumes(volumeSlider.value);
+        });
+
+        // ΝΕΑ ΠΡΟΣΘΗΚΗ: Κλικ πάνω στο εικονίδιο με το μεγάφωνο ανοίγει τον ήχο στο 100%
+        volumeIcon.addEventListener('click', function(e) {
+            e.stopPropagation(); // Σταματάει τη διάδοση του κλικ
+            volumeContainer.classList.remove('pulse-attention'); // Σταματάει το αναβόσβημα
+            volumeSlider.value = 100; // Πηγαίνει τη μπάρα στο τέρμα
+            updateAllVolumes(100); // Ανοίγει τον ήχο παντού
+            showControls();
         });
 
         volumeSlider.addEventListener('click', function(e) { e.stopPropagation(); });
