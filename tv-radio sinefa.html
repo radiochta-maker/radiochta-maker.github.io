@@ -65,6 +65,11 @@
             background: transparent;
         }
 
+        /* Κρύβει το ποντίκι σε όλη την οθόνη όταν δεν κουνιέται */
+        body.hide-cursor, body.hide-cursor * {
+            cursor: none !important;
+        }
+
         /* 🟢 SMART TV TOP HEADER */
         .player-header {
             position: absolute;
@@ -256,7 +261,7 @@
             font-size: 14px;
             margin-bottom: 20px;
         }
-        
+         
         /* MODERN CSS SPINNER */
         .spinner {
             width: 28px;
@@ -311,7 +316,7 @@
 </head>
 <body class="show-loading"> 
     <div class="player-fullscreen" id="mainContainer">
-        
+         
         <!-- Smart TV Header -->
         <div class="player-header" id="playerHeader">
             <div class="brand-title">Ράδιο Σύννεφα <span>TV</span></div>
@@ -347,7 +352,7 @@
                     <span id="volumeIcon"><i class="fas fa-volume-mute"></i></span>
                     <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="0">
                 </div>
-                
+                 
                 <button id="fsToggle" class="fullscreen-btn">
                     <span id="fsIcon"><i class="fas fa-expand"></i></span> 
                     <span id="fsText">Πλήρης Οθόνη</span>
@@ -417,15 +422,18 @@
             }
         });
 
-        // Διαχείριση εμφάνισης/εξαφανισης UI
+        // Διαχείριση εμφάνισης/εξαφανισης UI και Ποντικιού
         const showUI = () => {
             controls.classList.add('visible');
             header.classList.add('visible');
+            document.body.classList.remove('hide-cursor'); // Εμφανίζει το ποντίκι μόλις κουνηθεί
+            
             clearTimeout(hideTimeout);
             if (!volumeContainer.classList.contains('pulse-attention')) {
                 hideTimeout = setTimeout(() => { 
                     controls.classList.remove('visible'); 
                     header.classList.remove('visible'); 
+                    document.body.classList.add('hide-cursor'); // Κρύβει το ποντίκι μετά από 3.5 δευτερόλεπτα
                 }, HIDE_DELAY_MS);
             }
         };
