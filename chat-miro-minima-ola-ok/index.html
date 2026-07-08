@@ -81,15 +81,7 @@
     .msg-content { flex: 1; min-width: 0; }
     .msg .user { font-size: 0.85em; color: #10b981; margin-bottom: 4px; font-weight: bold; }
     .msg.own .user { color: #93c5fd; text-align: right; }
-    .msg .text { 
-  line-height: 1.4; 
-  word-wrap: break-word; 
-  word-break: break-word; 
-  overflow-wrap: break-word; 
-  font-size: 1.6em;
-  max-width: 100%;
-  white-space: normal;
-}
+    .msg .text { line-height: 1.4; word-wrap: break-word; font-size: 1.6em; }
     .msg .time { font-size: 0.75em; color: #9ca3af; margin-top: 4px; text-align: right; }
     .msg.own .time { color: #bfdbfe; }
     .input-area { background: rgba(22, 33, 62, 0.1); padding: 15px 20px; border-top: 2px solid rgba(31, 41, 55, 0.9); position: relative; backdrop-filter: blur(10px); }
@@ -408,6 +400,59 @@
       background: #4b5563;
     }
     
+    /* ✅ Image Preview Modal */
+    .image-preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+    }
+    .image-preview-overlay.show {
+      display: flex;
+    }
+    .image-preview-container {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .image-preview-container img {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      object-fit: contain;
+      cursor: default;
+    }
+    .image-preview-close {
+      position: absolute;
+      top: -50px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid #fff;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.5em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .image-preview-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+    
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: rgba(15, 15, 30, 0.5); }
     ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
@@ -503,6 +548,63 @@
         font-size: 0.75em;
       }
     }
+	/* ✅ Στυλ για το κουμπί φωτογραφίας */
+.image-btn {
+  background: none;
+  border: none;
+  color: #10b981;
+  cursor: pointer;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.image-btn:hover {
+  transform: scale(1.2) rotate(-5deg);
+  color: #34d399;
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.7));
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.image-btn:active {
+  transform: scale(0.95);
+}
+
+.image-btn svg {
+  width: 30px;
+  height: 30px;
+  transition: all 0.3s ease;
+}
+.image-btn.loading {
+  pointer-events: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.image-btn.loading svg {
+  animation: spin 1s linear infinite;
+}
+
+.image-btn .spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(16, 185, 129, 0.3);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
   </style>
 </head>
 <body>
@@ -548,6 +650,14 @@
       <button class="clear-confirmation-btn confirm" onclick="confirmClearMessages()">✅ Ναι, διαγραφή</button>
       <button class="clear-confirmation-btn cancel" onclick="hideClearConfirmation()">❌ Ακύρωση</button>
     </div>
+  </div>
+</div>
+
+<!-- ✅ Image Preview Modal -->
+<div class="image-preview-overlay" id="imagePreviewOverlay" onclick="closeImagePreview(event)">
+  <div class="image-preview-container">
+    <button class="image-preview-close" onclick="closeImagePreview(event)">✕</button>
+    <img id="imagePreviewImg" src="" alt="Preview">
   </div>
 </div>
 
@@ -604,7 +714,13 @@
         </div>
       </div>
       <div class="input-wrapper">
-        <button class="emoji-btn" onclick="toggleEmoji()">😀</button>
+         <button class="image-btn" onclick="triggerImageUpload()" title="Ανέβασε φωτογραφία (max 3MB)">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+    <circle cx="12" cy="13" r="4"></circle>
+  </svg>
+</button>
+<button class="emoji-btn" onclick="toggleEmoji()">😀</button>
         <input type="text" class="input-field" id="msgInput" placeholder="Γράψε ένα μήνυμα...">
         
         <button class="send-btn" onclick="sendMsg()" title="Αποστολή">
@@ -634,6 +750,7 @@
 </div>
 
 <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+<input type="file" id="imageUploadInput" accept="image/jpeg,image/png,image/gif" style="display:none" onchange="handleImageUpload(event)">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -654,6 +771,9 @@
   
   var isPlayerOpen = false;
   var isPlayerLoaded = false;
+  
+  var skipNextOwnImage = false;
+  var skipNextOwnPrivateImage = false;
   
   function togglePlayer() {
     if (isPlayerOpen) {
@@ -723,334 +843,243 @@
     symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧️','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️',' 🔼',' 🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','👁️‍🗨️','🔚','🔙','🔛','🔝','🔜','〰️','➰','➿','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','👁️‍🗨️','💬','💭','🗯️','♠️','♣️','♥️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛']
   };
 
-  if (!localStorage.getItem('chat_device_unique_id')) { var fixedId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now(); localStorage.setItem('chat_device_unique_id', fixedId); }
-  currentSessionId = localStorage.getItem('chat_device_unique_id');
+if (!localStorage.getItem('chat_device_unique_id')) { var fixedId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now(); localStorage.setItem('chat_device_unique_id', fixedId); }
+currentSessionId = localStorage.getItem('chat_device_unique_id');
 
-  Object.keys(emojiCategories).forEach(category => { var container = document.getElementById(category); emojiCategories[category].forEach(emoji => { var span = document.createElement('span'); span.className = 'emoji'; span.textContent = emoji; span.onclick = function() { document.getElementById('msgInput').value += emoji; document.getElementById('msgInput').focus(); }; container.appendChild(span); }); });
-  document.querySelectorAll('.emoji-tab').forEach(tab => { tab.addEventListener('click', function() { document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.emoji-category').forEach(c => c.classList.remove('active')); this.classList.add('active'); document.getElementById(this.dataset.category).classList.add('active'); }); });
+Object.keys(emojiCategories).forEach(category => { var container = document.getElementById(category); emojiCategories[category].forEach(emoji => { var span = document.createElement('span'); span.className = 'emoji'; span.textContent = emoji; span.onclick = function() { document.getElementById('msgInput').value += emoji; document.getElementById('msgInput').focus(); }; container.appendChild(span); }); });
+document.querySelectorAll('.emoji-tab').forEach(tab => { tab.addEventListener('click', function() { document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.emoji-category').forEach(c => c.classList.remove('active')); this.classList.add('active'); document.getElementById(this.dataset.category).classList.add('active'); }); });
 
-  function toggleBgControls() { document.getElementById('bgControlsPanel').classList.toggle('show'); document.getElementById('bannedPanel').classList.remove('show'); }
-  function updateBackground() { var posX = document.getElementById('bgPositionX').value; var brightness = document.getElementById('bgBrightness').value; var blur = document.getElementById('bgBlur').value; var overlay = document.getElementById('bgOverlay').value; document.getElementById('bgContainer').style.backgroundPosition = posX + '% center'; document.getElementById('bgContainer').style.filter = 'brightness(' + brightness + '%) blur(' + blur + 'px)'; document.querySelector('.bg-overlay').style.background = 'rgba(15, 15, 30, ' + (overlay / 100) + ')'; document.getElementById('posValue').textContent = posX + '%'; document.getElementById('brightValue').textContent = brightness + '%'; document.getElementById('blurValue').textContent = blur + 'px'; document.getElementById('overlayValue').textContent = overlay + '%'; localStorage.setItem('bg_settings', JSON.stringify({ posX, brightness, blur, overlay })); }
-  function loadBgSettings() { var saved = localStorage.getItem('bg_settings'); if (saved) { var s = JSON.parse(saved); document.getElementById('bgPositionX').value = s.posX || 50; document.getElementById('bgBrightness').value = s.brightness || 100; document.getElementById('bgBlur').value = s.blur || 0; document.getElementById('bgOverlay').value = s.overlay || 70; updateBackground(); } }
+function toggleBgControls() { document.getElementById('bgControlsPanel').classList.toggle('show'); document.getElementById('bannedPanel').classList.remove('show'); }
+function updateBackground() { var posX = document.getElementById('bgPositionX').value; var brightness = document.getElementById('bgBrightness').value; var blur = document.getElementById('bgBlur').value; var overlay = document.getElementById('bgOverlay').value; document.getElementById('bgContainer').style.backgroundPosition = posX + '% center'; document.getElementById('bgContainer').style.filter = 'brightness(' + brightness + '%) blur(' + blur + 'px)'; document.querySelector('.bg-overlay').style.background = 'rgba(15, 15, 30, ' + (overlay / 100) + ')'; document.getElementById('posValue').textContent = posX + '%'; document.getElementById('brightValue').textContent = brightness + '%'; document.getElementById('blurValue').textContent = blur + 'px'; document.getElementById('overlayValue').textContent = overlay + '%'; localStorage.setItem('bg_settings', JSON.stringify({ posX, brightness, blur, overlay })); }
+function loadBgSettings() { var saved = localStorage.getItem('bg_settings'); if (saved) { var s = JSON.parse(saved); document.getElementById('bgPositionX').value = s.posX || 50; document.getElementById('bgBrightness').value = s.brightness || 100; document.getElementById('bgBlur').value = s.blur || 0; document.getElementById('bgOverlay').value = s.overlay || 70; updateBackground(); } }
 
-  async function checkIfBanned(username) {
-    try {
-      var result = await client.from('banned_users').select('username').eq('username', username.toLowerCase()).eq('ban_type', 'username').maybeSingle();
-      if (result.data) return true;
-      return false;
-    } catch(e) { console.error('Ban check error:', e); return false; }
-  }
-  
-  async function banUser(username) {
-    pendingBanUsername = username;
-    document.getElementById('banTypeText').textContent = `Θέλεις να μπανάρεις τον "${username}";`;
-    document.getElementById('banTypeOverlay').classList.add('show');
-  }
-  
-  async function confirmBan() {
-    if (!pendingBanUsername) return;
-    document.getElementById('banTypeOverlay').classList.remove('show');
-    var username = pendingBanUsername;
-    pendingBanUsername = null;
-    
-    try {
-      await client.from('banned_users').insert([{ username: username.toLowerCase(), banned_by: currentUser, ban_type: 'username' }]);
-      try { await client.from('active_sessions').delete().eq('username', username); } catch(e) { console.error('Session delete error:', e); }
-      alert('✅ Ο χρήστης "' + username + '" έγινε banned!');
-      loadBannedUsers();
-    } catch(e) {
-      if (e.message && e.message.includes('duplicate')) { alert('⚠️ Ο χρήστης είναι ήδη banned!'); } else { alert('Σφάλμα: ' + e.message); }
-    }
-  }
-  
-  function cancelBan() { pendingBanUsername = null; document.getElementById('banTypeOverlay').classList.remove('show'); }
-  
-  async function unbanUser(username) {
-    if (!confirm('✅ Θέλεις να αφαιρέσεις το ban από τον χρήστη "' + username + '";')) return;
-    try {
-      await client.from('banned_users').delete().eq('username', username.toLowerCase());
-      alert('✅ Το ban από τον "' + username + '" αφαιρέθηκε! Μπορεί να ξαναμπεί.');
-      loadBannedUsers();
-      renderBannedUsersPanel();
-    } catch(e) { alert('Σφάλμα: ' + e.message); }
-  }
-  
-  async function loadBannedUsers() {
-    try { var result = await client.from('banned_users').select('*').order('banned_at', { ascending: false }); if (result.data) { bannedUsersList = result.data; } } catch(e) { console.error('Load banned error:', e); bannedUsersList = []; }
-  }
-  
-  function renderBannedUsersPanel() {
-    var list = document.getElementById('bannedUsersList');
-    list.innerHTML = '';
-    if (bannedUsersList.length === 0) { list.innerHTML = '<div class="no-banned">Δεν υπάρχουν banned χρήστες 🎉</div>'; return; }
-    bannedUsersList.forEach(ban => {
-      var div = document.createElement('div');
-      div.className = 'banned-user-item';
-      var time = new Date(ban.banned_at).toLocaleString('el', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      var banTypeText = '❌ Username Ban';
-      div.innerHTML = `<div class="banned-user-info"><div class="banned-user-name">🚫 ${escapeHtml(ban.username)}</div><div class="banned-user-time">${time}</div><div class="banned-user-by">από: ${escapeHtml(ban.banned_by)}</div><div class="banned-user-type">${banTypeText}</div></div><button class="unban-btn" onclick="unbanUser('${escapeHtml(ban.username)}')">✅ Αφαίρεση</button>`;
-      list.appendChild(div);
-    });
-  }
-  
-  function toggleBannedPanel() { var panel = document.getElementById('bannedPanel'); panel.classList.toggle('show'); document.getElementById('bgControlsPanel').classList.remove('show'); document.getElementById('emojiPanel').classList.remove('show'); if (panel.classList.contains('show')) { loadBannedUsers().then(() => renderBannedUsersPanel()); } }
-  
-  function handleBannedWhileOnline() {
-    document.getElementById('banNotifOverlay').classList.add('show');
-    setTimeout(async () => {
-      try { if (presenceChannel) await presenceChannel.untrack(); if (channel) await channel.unsubscribe(); if (privateChannel) await privateChannel.unsubscribe(); if (banChannel) await banChannel.unsubscribe(); try { await client.from('active_sessions').delete().eq('username', currentUser); } catch(e) {} } catch(e) { console.error('Cleanup error:', e); }
-      localStorage.removeItem('chat_username'); currentUser = ''; isAdmin = false; currentPrivateChat = null;
-      document.getElementById('chatApp').style.display = 'none'; document.getElementById('banNotifOverlay').classList.remove('show'); document.getElementById('loginDiv').style.display = 'flex'; document.getElementById('userIn').value = '';
-      var err = document.getElementById('err'); err.textContent = '🚫 Είσαι banned από τον διαχειριστή!'; err.className = 'error banned-error'; err.style.display = 'block';
-    }, 3000);
-  }
-  
-  function subscribeToBans() {
-    banChannel = client.channel('banned-users-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'banned_users' }, async payload => {
-        var bannedUsername = payload.new.username.toLowerCase();
-        if (bannedUsername === currentUser.toLowerCase()) { handleBannedWhileOnline(); }
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'banned_users' }, async payload => { if (isAdmin && document.getElementById('bannedPanel').classList.contains('show')) { await loadBannedUsers(); renderBannedUsersPanel(); } })
-      .subscribe();
-  }
+async function checkIfBanned(username) { try { var result = await client.from('banned_users').select('username').eq('username', username.toLowerCase()).eq('ban_type', 'username').maybeSingle(); if (result.data) return true; return false; } catch(e) { console.error('Ban check error:', e); return false; } }
+async function banUser(username) { pendingBanUsername = username; document.getElementById('banTypeText').textContent = `Θέλεις να μπανάρεις τον "${username}";`; document.getElementById('banTypeOverlay').classList.add('show'); }
+async function confirmBan() { if (!pendingBanUsername) return; document.getElementById('banTypeOverlay').classList.remove('show'); var username = pendingBanUsername; pendingBanUsername = null; try { await client.from('banned_users').insert([{ username: username.toLowerCase(), banned_by: currentUser, ban_type: 'username' }]); try { await client.from('active_sessions').delete().eq('username', username); } catch(e) { console.error('Session delete error:', e); } alert('✅ Ο χρήστης "' + username + '" έγινε banned!'); loadBannedUsers(); } catch(e) { if (e.message && e.message.includes('duplicate')) { alert('⚠️ Ο χρήστης είναι ήδη banned!'); } else { alert('Σφάλμα: ' + e.message); } } }
+function cancelBan() { pendingBanUsername = null; document.getElementById('banTypeOverlay').classList.remove('show'); }
+async function unbanUser(username) { if (!confirm('✅ Θέλεις να αφαιρέσεις το ban από τον χρήστη "' + username + '";')) return; try { await client.from('banned_users').delete().eq('username', username.toLowerCase()); alert('✅ Το ban από τον "' + username + '" αφαιρέθηκε!'); loadBannedUsers(); renderBannedUsersPanel(); } catch(e) { alert('Σφάλμα: ' + e.message); } }
+async function loadBannedUsers() { try { var result = await client.from('banned_users').select('*').order('banned_at', { ascending: false }); if (result.data) { bannedUsersList = result.data; } } catch(e) { console.error('Load banned error:', e); bannedUsersList = []; } }
+function renderBannedUsersPanel() { var list = document.getElementById('bannedUsersList'); list.innerHTML = ''; if (bannedUsersList.length === 0) { list.innerHTML = '<div class="no-banned">Δεν υπάρχουν banned χρήστες 🎉</div>'; return; } bannedUsersList.forEach(ban => { var div = document.createElement('div'); div.className = 'banned-user-item'; var time = new Date(ban.banned_at).toLocaleString('el', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); div.innerHTML = `<div class="banned-user-info"><div class="banned-user-name">🚫 ${escapeHtml(ban.username)}</div><div class="banned-user-time">${time}</div><div class="banned-user-by">από: ${escapeHtml(ban.banned_by)}</div></div><button class="unban-btn" onclick="unbanUser('${escapeHtml(ban.username)}')">✅ Αφαίρεση</button>`; list.appendChild(div); }); }
+function toggleBannedPanel() { var panel = document.getElementById('bannedPanel'); panel.classList.toggle('show'); document.getElementById('bgControlsPanel').classList.remove('show'); document.getElementById('emojiPanel').classList.remove('show'); if (panel.classList.contains('show')) { loadBannedUsers().then(() => renderBannedUsersPanel()); } }
+function handleBannedWhileOnline() { document.getElementById('banNotifOverlay').classList.add('show'); setTimeout(async () => { try { if (presenceChannel) await presenceChannel.untrack(); if (channel) await channel.unsubscribe(); if (privateChannel) await privateChannel.unsubscribe(); if (banChannel) await banChannel.unsubscribe(); try { await client.from('active_sessions').delete().eq('username', currentUser); } catch(e) {} } catch(e) { console.error('Cleanup error:', e); } localStorage.removeItem('chat_username'); currentUser = ''; isAdmin = false; currentPrivateChat = null; document.getElementById('chatApp').style.display = 'none'; document.getElementById('banNotifOverlay').classList.remove('show'); document.getElementById('loginDiv').style.display = 'flex'; document.getElementById('userIn').value = ''; var err = document.getElementById('err'); err.textContent = '🚫 Είσαι banned!'; err.className = 'error banned-error'; err.style.display = 'block'; }, 3000); }
+function subscribeToBans() { banChannel = client.channel('banned-users-channel').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'banned_users' }, async payload => { var bannedUsername = payload.new.username.toLowerCase(); if (bannedUsername === currentUser.toLowerCase()) { handleBannedWhileOnline(); } }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'banned_users' }, async payload => { if (isAdmin && document.getElementById('bannedPanel').classList.contains('show')) { await loadBannedUsers(); renderBannedUsersPanel(); } }).subscribe(); }
 
-  function handleAvatarUpload(event) {
-    var file = event.target.files[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { alert('Η φωτογραφία πρέπει να είναι μικρότερη από 2MB!'); return; }
-    var reader = new FileReader();
-    reader.onload = async function(e) {
-      var base64 = e.target.result;
-      try { await client.from('user_avatars').upsert([{ username: currentUser.toLowerCase(), avatar_url: base64 }]); userAvatars[currentUser.toLowerCase()] = base64; localStorage.setItem('user_avatar_' + currentUser.toLowerCase(), base64); await presenceChannel.track({ username: currentUser, avatar: base64 }); updateUserList(); alert('✅ Η φωτογραφία σου ενημερώθηκε!'); } catch(err) { alert('Σφάλμα: ' + err.message); }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function ensureAvatarsLoaded(usernames) {
-    var toFetch = usernames.filter(u => { var lower = u.toLowerCase(); return !userAvatars[lower] && !localStorage.getItem('user_avatar_' + lower); });
-    if (toFetch.length === 0) return;
-    try { var result = await client.from('user_avatars').select('*').in('username', toFetch.map(u => u.toLowerCase())); if (result.data) { result.data.forEach(row => { var uname = row.username.toLowerCase(); userAvatars[uname] = row.avatar_url; localStorage.setItem('user_avatar_' + uname, row.avatar_url); }); } } catch(e) { console.error('Avatar fetch error:', e); }
-  }
-
-  window.addEventListener('load', async function() {
-    loadBgSettings(); loadSoundSettings();
-    client = window.supabase.createClient('https://hfnzcltouedgzcsykszq.supabase.co', 'sb_publishable_1j17Xud6lcKS5ZF3FLbgVg_m-7nfTe8');
-    setupPresenceInitial();
-    var savedUser = localStorage.getItem('chat_username');
-    if (savedUser) { document.getElementById('userIn').value = savedUser; setTimeout(() => goChat(true), 300); }
-  });
-
-  function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-  function getAvatarHtml(username) { var lower = username.toLowerCase(); var initial = username.charAt(0).toUpperCase(); var avatarUrl = userAvatars[lower] || localStorage.getItem('user_avatar_' + lower); if (avatarUrl) { return `<div class="msg-avatar"><img src="${avatarUrl}" alt="${escapeHtml(username)}"></div>`; } return `<div class="msg-avatar">${initial}</div>`; }
-
-  async function loadMessages() { var result = await client.from('messages').select('*').order('timestamp', { ascending: true }).limit(100); if (result.error) throw result.error; var uniqueUsers = [...new Set(result.data.map(msg => msg.user))]; await ensureAvatarsLoaded(uniqueUsers); var container = document.getElementById('msgContainer'); container.innerHTML = ''; result.data.forEach(msg => addMessageToUI(msg, false)); container.scrollTop = container.scrollHeight; }
-  async function loadPrivateMessages(otherUser) {
-    try {
-      var result = await client.from('private_messages').select('*').or(`sender.eq.${currentUser},receiver.eq.${currentUser}`).order('timestamp', { ascending: true }).limit(200);
-      if (result.error) { console.error('Private messages error:', result.error); alert('Σφάλμα φόρτωσης ιδιωτικών μηνυμάτων: ' + result.error.message); return; }
-      var filtered = result.data.filter(msg => (msg.sender.toLowerCase() === currentUser.toLowerCase() && msg.receiver.toLowerCase() === otherUser.toLowerCase()) || (msg.sender.toLowerCase() === otherUser.toLowerCase() && msg.receiver.toLowerCase() === currentUser.toLowerCase()));
-      var uniqueUsers = [...new Set(filtered.map(msg => msg.sender))]; await ensureAvatarsLoaded(uniqueUsers);
-      var container = document.getElementById('msgContainer'); container.innerHTML = ''; filtered.forEach(msg => addMessageToUI(msg, true)); container.scrollTop = container.scrollHeight;
-      var unreadIds = filtered.filter(msg => msg.receiver.toLowerCase() === currentUser.toLowerCase() && !msg.is_read).map(msg => msg.id);
-      if (unreadIds.length > 0) { await client.from('private_messages').update({ is_read: true }).in('id', unreadIds); }
-    } catch(e) { console.error('Load private messages error:', e); }
-  }
-
-  function addMessageToUI(msg, isPrivate) { var container = document.getElementById('msgContainer'); var div = document.createElement('div'); var senderName = msg.user || msg.sender; var text = msg.text || msg.message; var isOwn = senderName.toLowerCase() === currentUser.toLowerCase(); div.className = 'msg' + (isOwn ? ' own' : '') + (isPrivate ? ' private' : ''); var time = new Date(msg.timestamp).toLocaleTimeString('el', { hour: '2-digit', minute: '2-digit' }); var avatarHtml = getAvatarHtml(senderName); div.innerHTML = `${avatarHtml}<div class="msg-content"><div class="user">${escapeHtml(senderName)}</div><div class="text">${escapeHtml(text)}</div><div class="time">${time}</div></div>`; container.appendChild(div); container.scrollTop = container.scrollHeight; }
-
-  async function sendMsg() { var input = document.getElementById('msgInput'); var text = input.value.trim(); if (!text) return; try { if (currentPrivateChat) { await client.from('private_messages').insert([{ sender: currentUser, receiver: currentPrivateChat, message: text }]); } else { await client.from('messages').insert([{ user: currentUser, text: text }]); } input.value = ''; } catch(e) { console.error('Send error:', e); alert('Σφάλμα αποστολής: ' + e.message); } }
-
-  function toggleEmoji() { document.getElementById('emojiPanel').classList.toggle('show'); document.getElementById('bannedPanel').classList.remove('show'); document.getElementById('bgControlsPanel').classList.remove('show'); }
-
-  function updateUserList() {
-    var users = Object.keys(onlineUsers).sort(); var list = document.getElementById('userList'); list.innerHTML = '';
-    users.forEach(username => {
-      var div = document.createElement('div'); div.className = 'user-item'; var initial = username.charAt(0).toUpperCase();
-      var avatarHtml = userAvatars[username.toLowerCase()] ? `<div class="avatar" onclick="triggerAvatarUpload('${username}')"><img src="${userAvatars[username.toLowerCase()]}" alt="avatar">${username === currentUser ? '<div class="avatar-upload-hint">📷</div>' : ''}</div>` : `<div class="avatar" onclick="triggerAvatarUpload('${username}')">${initial}${username === currentUser ? '<div class="avatar-upload-hint">📷</div>' : ''}</div>`;
-      var lockBtn = ''; var banBtn = '';
-      if (username !== currentUser) { lockBtn = `<button class="private-lock-btn" onclick="startPrivateChat('${username}')" title="Ιδιωτικό μήνυμα">🔒</button>`; if (isAdmin) { banBtn = `<button class="ban-user-btn show" onclick="banUser('${username}')" title="Ban χρήστη">🚫</button>`; } }
-      div.innerHTML = `${avatarHtml}<div class="user-info"><div class="user-name">${escapeHtml(username)}</div><div class="user-status">Online</div></div>${lockBtn}${banBtn}`; list.appendChild(div);
-    });
-    document.getElementById('onlineNum').textContent = users.length; document.getElementById('userNum').textContent = users.length;
-  }
-
-  function triggerAvatarUpload(username) { if (username === currentUser) document.getElementById('avatarInput').click(); }
-  function startPrivateChat(username) { 
-    if (username === currentUser) return; 
-    if (!onlineUsers[username]) { alert('Ο χρήστης δεν είναι online!'); return; } 
-    currentPrivateChat = username; 
-    document.getElementById('chatMain').classList.add('private-mode'); 
-    document.getElementById('privateHeader').classList.add('show'); 
-    document.getElementById('mainHeader').style.display = 'none'; 
-    document.getElementById('privateWithUser').textContent = username; 
-    document.getElementById('msgInput').placeholder = 'Γράψε ιδιωτικό μήνυμα στον ' + username + '...'; 
-    document.getElementById('emojiPanel').classList.remove('show'); 
-    
-    if (window.innerWidth <= 768) {
-      closeSidebar();
-    }
-    
-    loadPrivateMessages(username); 
-  }
-  function closePrivateChat() { currentPrivateChat = null; document.getElementById('chatMain').classList.remove('private-mode'); document.getElementById('privateHeader').classList.remove('show'); document.getElementById('mainHeader').style.display = 'flex'; document.getElementById('msgInput').placeholder = 'Γράψε ένα μήνυμα...'; loadMessages(); }
-  function showPrivateNotification(sender) { if (pendingPrivateNotif) return; pendingPrivateNotif = sender; document.getElementById('privateNotifText').textContent = 'Ο ' + sender + ' σου έστειλε ιδιωτικό μήνυμα!'; document.getElementById('privateNotifOverlay').classList.add('show'); }
-  function acceptPrivateNotification() { if (pendingPrivateNotif) { var sender = pendingPrivateNotif; pendingPrivateNotif = null; document.getElementById('privateNotifOverlay').classList.remove('show'); startPrivateChat(sender); } }
-
-  function subscribeToMessages() {
-    channel = client.channel('radiochat-messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => { 
-        await ensureAvatarsLoaded([payload.new.user]); 
-        if (!currentPrivateChat) { 
-          addMessageToUI(payload.new, false); 
-          if (payload.new.user.toLowerCase() !== currentUser.toLowerCase()) { 
-            playNotificationSound(); 
-          } 
-        } 
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, async payload => {
-        // 🗑️ ΑΚΑΡΙΑΙΟΣ ΚΑΘΑΡΙΣΜΟΣ UI ΓΙΑ ΟΛΟΥΣ ΤΟΥΣ ΧΡΗΣΤΕΣ
-        if (!currentPrivateChat) {
-          document.getElementById('msgContainer').innerHTML = '';
-        }
-      })
-      .subscribe();
-      
-    privateChannel = client.channel('radiochat-private').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, async payload => { var msg = payload.new; await ensureAvatarsLoaded([msg.sender]); var isForMe = msg.receiver.toLowerCase() === currentUser.toLowerCase(); var isFromMe = msg.sender.toLowerCase() === currentUser.toLowerCase(); if (isForMe || isFromMe) { if (currentPrivateChat && currentPrivateChat.toLowerCase() === msg.sender.toLowerCase()) { addMessageToUI(msg, true); if (isForMe) { await client.from('private_messages').update({ is_read: true }).eq('id', msg.id); } } else if (isForMe) { showPrivateNotification(msg.sender); } } }).subscribe();
-  }
-
-  function setupPresenceInitial() { presenceChannel = client.channel('presence-chat').on('presence', { event: 'sync' }, () => { var state = presenceChannel.presenceState(); onlineUsers = {}; Object.keys(state).forEach(key => { state[key].forEach(p => { if (p.username) { onlineUsers[p.username] = true; if (p.avatar) { var lower = p.username.toLowerCase(); userAvatars[lower] = p.avatar; localStorage.setItem('user_avatar_' + lower, p.avatar); } } }); }); updateUserList(); }).subscribe(); }
-
-  async function goChat(isAutoLogin = false) {
-    var inputVal = document.getElementById('userIn').value.trim();
-    var err = document.getElementById('err');
-    err.style.display = 'none'; err.className = 'error';
-    if (!inputVal) return;
-
-    var username = inputVal.includes(":") ? inputVal.split(":")[0].trim() : inputVal;
-    var password = inputVal.includes(":") ? inputVal.split(":")[1].trim() : "";
-
-    var isBanned = await checkIfBanned(username);
-    if (isBanned) { err.textContent = '🚫 Είσαι banned από τον διαχειριστή!'; err.className = 'error banned-error'; err.style.display = 'block'; if (isAutoLogin) localStorage.removeItem('chat_username'); return; }
-
-    if (username.toLowerCase() === "sakis" && password !== "019630") { if (isAutoLogin) localStorage.removeItem('chat_username'); else { err.textContent = 'Λάθος κωδικός διαχειριστή!'; err.style.display = 'block'; } return; }
-
-    try {
-      const { data: existing } = await client.from('active_sessions').select('session_id').eq('username', username).maybeSingle();
-      if (existing) { if (existing.session_id !== currentSessionId) { err.textContent = 'Αυτό το όνομα είναι κλειδωμένο!'; err.style.display = 'block'; return; } } else { await client.from('active_sessions').insert([{ username: username, session_id: currentSessionId }]); }
-
-      currentUser = username; localStorage.setItem('chat_username', inputVal);
-      
-      if (currentUser.toLowerCase() === "sakis") { 
-        isAdmin = true; 
-        document.getElementById('adminClearBtn').style.display = 'block'; 
-        document.getElementById('bannedBtn').classList.add('show');
-        document.getElementById('clearBtn').classList.add('show');
-      } else {
-        isAdmin = false;
-        document.getElementById('clearBtn').classList.remove('show');
-      }
-
-      var trackData = { username: currentUser }; var localAvatar = localStorage.getItem('user_avatar_' + currentUser.toLowerCase()); if (localAvatar) { userAvatars[currentUser.toLowerCase()] = localAvatar; trackData.avatar = localAvatar; }
-      await presenceChannel.track(trackData);
-
-      document.getElementById('loginDiv').style.display = 'none'; document.getElementById('chatApp').style.display = 'flex'; document.getElementById('msgInput').focus();
-      await loadMessages(); subscribeToMessages(); subscribeToBans();
-    } catch(e) { err.textContent = 'Σφάλμα: ' + e.message; err.style.display = 'block'; }
-  }
-
-  async function adminClearAll() { if (!isAdmin) return; if (!confirm("⚠️ Διαγραφή ονομάτων;")) return; try { await client.from('active_sessions').delete().neq('username', '---'); alert("✅ Έγινε!"); } catch(e) { alert("Σφάλμα: " + e.message); } }
-  async function logoutChat() { 
-  if (!confirm("⚠️ Προσοχή: Αν αποσυνδεθείτε, χάνετε τη δέσμευση του ονόματός σας. Αν κάποιος άλλος το πάρει, δεν θα μπορείτε να εισέλθετε ξανά με αυτό το όνομα. Επιβεβαιώνετε;")) return; 
-  
-  document.getElementById('playerIframe').src = '';
-  document.getElementById('playerPanel').classList.remove('show');
-  isPlayerOpen = false;
-  isPlayerLoaded = false;
-  document.getElementById('radioBtn').classList.remove('playing');
-  
-  try { await client.from('active_sessions').delete().eq('username', currentUser); } catch(e) {} 
-  if (presenceChannel) await presenceChannel.untrack(); 
-  if (channel) await channel.unsubscribe(); 
-  if (privateChannel) await privateChannel.unsubscribe(); 
-  if (banChannel) await banChannel.unsubscribe(); 
-  localStorage.removeItem('chat_username'); 
-  currentUser = ''; 
-  isAdmin = false; 
-  currentPrivateChat = null; 
-  document.getElementById('chatApp').style.display = 'none'; 
-  document.getElementById('loginDiv').style.display = 'flex'; 
-  document.getElementById('userIn').value = ''; 
+function handleAvatarUpload(event) {
+  var file = event.target.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { alert('Η φωτογραφία πρέπει να είναι μικρότερη από 3MB!'); return; }
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    var base64 = e.target.result;
+    try { await client.from('user_avatars').upsert([{ username: currentUser.toLowerCase(), avatar_url: base64 }]); userAvatars[currentUser.toLowerCase()] = base64; localStorage.setItem('user_avatar_' + currentUser.toLowerCase(), base64); await presenceChannel.track({ username: currentUser, avatar: base64 }); updateUserList(); alert('✅ Η φωτογραφία σου ενημερώθηκε!'); } catch(err) { alert('Σφάλμα: ' + err.message); }
+  };
+  reader.readAsDataURL(file);
 }
 
-  function showClearConfirmation() {
-    if (!isAdmin) {
-      alert('⛔ Δεν έχεις δικαίωμα να διαγράψεις μηνύματα!');
-      return;
-    }
-    document.getElementById('clearConfirmationOverlay').classList.add('show');
-  }
+async function ensureAvatarsLoaded(usernames) {
+  var toFetch = usernames.filter(u => { var lower = u.toLowerCase(); return !userAvatars[lower] && !localStorage.getItem('user_avatar_' + lower); });
+  if (toFetch.length === 0) return;
+  try { var result = await client.from('user_avatars').select('*').in('username', toFetch.map(u => u.toLowerCase())); if (result.data) { result.data.forEach(row => { var uname = row.username.toLowerCase(); userAvatars[uname] = row.avatar_url; localStorage.setItem('user_avatar_' + uname, row.avatar_url); }); } } catch(e) { console.error('Avatar fetch error:', e); }
+}
 
-  function hideClearConfirmation() {
-    document.getElementById('clearConfirmationOverlay').classList.remove('show');
-  }
+window.addEventListener('load', async function() {
+  loadBgSettings(); loadSoundSettings();
+  client = window.supabase.createClient('https://hfnzcltouedgzcsykszq.supabase.co', 'sb_publishable_1j17Xud6lcKS5ZF3FLbgVg_m-7nfTe8');
+  setupPresenceInitial();
+  var savedUser = localStorage.getItem('chat_username');
+  if (savedUser) { document.getElementById('userIn').value = savedUser; setTimeout(() => goChat(true), 300); }
+});
 
-  async function confirmClearMessages() {
-    if (!isAdmin) {
-      alert('⛔ Δεν έχεις δικαίωμα να διαγράψεις μηνύματα!');
-      hideClearConfirmation();
-      return;
-    }
-    hideClearConfirmation();
+function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function getAvatarHtml(username) { var lower = username.toLowerCase(); var initial = username.charAt(0).toUpperCase(); var avatarUrl = userAvatars[lower] || localStorage.getItem('user_avatar_' + lower); if (avatarUrl) { return `<div class="msg-avatar"><img src="${avatarUrl}" alt="${escapeHtml(username)}"></div>`; } return `<div class="msg-avatar">${initial}</div>`; }
+
+async function loadMessages() { var result = await client.from('messages').select('*').order('timestamp', { ascending: true }).limit(100); if (result.error) throw result.error; var uniqueUsers = [...new Set(result.data.map(msg => msg.user))]; await ensureAvatarsLoaded(uniqueUsers); var container = document.getElementById('msgContainer'); container.innerHTML = ''; result.data.forEach(msg => addMessageToUI(msg, false)); container.scrollTop = container.scrollHeight; }
+async function loadPrivateMessages(otherUser) { try { var result = await client.from('private_messages').select('*').or(`sender.eq.${currentUser},receiver.eq.${currentUser}`).order('timestamp', { ascending: true }).limit(200); if (result.error) { console.error('Private messages error:', result.error); alert('Σφάλμα: ' + result.error.message); return; } var filtered = result.data.filter(msg => (msg.sender.toLowerCase() === currentUser.toLowerCase() && msg.receiver.toLowerCase() === otherUser.toLowerCase()) || (msg.sender.toLowerCase() === otherUser.toLowerCase() && msg.receiver.toLowerCase() === currentUser.toLowerCase())); var uniqueUsers = [...new Set(filtered.map(msg => msg.sender))]; await ensureAvatarsLoaded(uniqueUsers); var container = document.getElementById('msgContainer'); container.innerHTML = ''; filtered.forEach(msg => addMessageToUI(msg, true)); container.scrollTop = container.scrollHeight; var unreadIds = filtered.filter(msg => msg.receiver.toLowerCase() === currentUser.toLowerCase() && !msg.is_read).map(msg => msg.id); if (unreadIds.length > 0) { await client.from('private_messages').update({ is_read: true }).in('id', unreadIds); } } catch(e) { console.error('Load private messages error:', e); } }
+
+function addMessageToUI(msg, isPrivate) {
+  var container = document.getElementById('msgContainer');
+  var div = document.createElement('div');
+  
+  var senderName = msg.user || msg.sender || "Άγνωστος";
+  var text = msg.text || msg.message || "";
+  var img = msg.image_data || null;
+  
+  var isOwn = senderName.toLowerCase() === currentUser.toLowerCase();
+  div.className = 'msg' + (isOwn ? ' own' : '') + (isPrivate ? ' private' : '');
+  
+  var avatarHtml = getAvatarHtml(senderName);
+  var time = new Date(msg.timestamp || Date.now()).toLocaleTimeString('el', { hour: '2-digit', minute: '2-digit' });
+  
+  var contentHtml = img 
+    ? `<div class="text"><img src="${img}" style="max-width:200px; border-radius:8px; display:block; margin:5px 0;"></div>`
+    : `<div class="text">${escapeHtml(text)}</div>`;
+
+  div.innerHTML = `${avatarHtml}<div class="msg-content"><div class="user">${escapeHtml(senderName)}</div>${contentHtml}<div class="time">${time}</div></div>`;
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMsg() { var input = document.getElementById('msgInput'); var text = input.value.trim(); if (!text) return; try { if (currentPrivateChat) { await client.from('private_messages').insert([{ sender: currentUser, receiver: currentPrivateChat, message: text }]); } else { await client.from('messages').insert([{ user: currentUser, text: text }]); } input.value = ''; } catch(e) { console.error('Send error:', e); alert('Σφάλμα: ' + e.message); } }
+function toggleEmoji() { document.getElementById('emojiPanel').classList.toggle('show'); document.getElementById('bannedPanel').classList.remove('show'); document.getElementById('bgControlsPanel').classList.remove('show'); }
+
+function updateUserList() { var users = Object.keys(onlineUsers).sort(); var list = document.getElementById('userList'); list.innerHTML = ''; users.forEach(username => { var div = document.createElement('div'); div.className = 'user-item'; var initial = username.charAt(0).toUpperCase(); var avatarHtml = userAvatars[username.toLowerCase()] ? `<div class="avatar" onclick="triggerAvatarUpload('${username}')"><img src="${userAvatars[username.toLowerCase()]}" alt="avatar">${username === currentUser ? '<div class="avatar-upload-hint">📷</div>' : ''}</div>` : `<div class="avatar" onclick="triggerAvatarUpload('${username}')">${initial}${username === currentUser ? '<div class="avatar-upload-hint">📷</div>' : ''}</div>`; var lockBtn = ''; var banBtn = ''; if (username !== currentUser) { lockBtn = `<button class="private-lock-btn" onclick="startPrivateChat('${username}')" title="Ιδιωτικό">🔒</button>`; if (isAdmin) { banBtn = `<button class="ban-user-btn show" onclick="banUser('${username}')" title="Ban">🚫</button>`; } } div.innerHTML = `${avatarHtml}<div class="user-info"><div class="user-name">${escapeHtml(username)}</div><div class="user-status">Online</div></div>${lockBtn}${banBtn}`; list.appendChild(div); }); document.getElementById('onlineNum').textContent = users.length; document.getElementById('userNum').textContent = users.length; }
+
+function triggerAvatarUpload(username) { if (username === currentUser) document.getElementById('avatarInput').click(); }
+function triggerImageUpload() { document.getElementById('imageUploadInput').click(); }
+function startPrivateChat(username) { if (username === currentUser) return; if (!onlineUsers[username]) { alert('Ο χρήστης δεν είναι online!'); return; } currentPrivateChat = username; document.getElementById('chatMain').classList.add('private-mode'); document.getElementById('privateHeader').classList.add('show'); document.getElementById('mainHeader').style.display = 'none'; document.getElementById('privateWithUser').textContent = username; document.getElementById('msgInput').placeholder = 'Γράψε ιδιωτικό...'; document.getElementById('emojiPanel').classList.remove('show'); if (window.innerWidth <= 768) { closeSidebar(); } loadPrivateMessages(username); }
+function closePrivateChat() { currentPrivateChat = null; document.getElementById('chatMain').classList.remove('private-mode'); document.getElementById('privateHeader').classList.remove('show'); document.getElementById('mainHeader').style.display = 'flex'; document.getElementById('msgInput').placeholder = 'Γράψε ένα μήνυμα...'; loadMessages(); }
+
+async function handleImageUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+    alert('Μόνο JPG, PNG, GIF!');
+    event.target.value = '';
+    return;
+  }
+  if (file.size > 3 * 1024 * 1024) {
+    alert('Πολύ μεγάλη!');
+    event.target.value = '';
+    return;
+  }
+  
+  var imageBtn = document.querySelector('.image-btn');
+  var originalHTML = imageBtn.innerHTML;
+  imageBtn.innerHTML = '<div class="spinner"></div>';
+  imageBtn.classList.add('loading');
+  
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    var base64 = e.target.result;
     try {
-      const { error } = await client.from('messages').delete().neq('id', 0);
-      if (error) throw error;
-      document.getElementById('msgContainer').innerHTML = '';
-      alert('✅ Όλα τα μηνύματα διαγράφηκαν επιτυχώς!');
+      var timestamp = new Date().toISOString();
+      if (currentPrivateChat) {
+        await client.from('private_messages').insert([{
+          sender: currentUser,
+          receiver: currentPrivateChat,
+          message: '[📸 Εικόνα]',
+          image_data: base64
+        }]);
+        var msgData = {
+          sender: currentUser,
+          receiver: currentPrivateChat,
+          message: '[📸 Εικόνα]',
+          image_data: base64,
+          timestamp: timestamp
+        };
+        addMessageToUI(msgData, true);
+        skipNextOwnPrivateImage = true;
+      } else {
+        await client.from('messages').insert([{
+          user: currentUser,
+          text: '[📸 Εικόνα]',
+          image_data: base64,
+          timestamp: timestamp
+        }]);
+        var msgData = {
+          user: currentUser,
+          text: '[📸 Εικόνα]',
+          image_data: base64,
+          timestamp: timestamp
+        };
+        addMessageToUI(msgData, false);
+        skipNextOwnImage = true;
+      }
     } catch(e) {
-      console.error('Clear messages error:', e);
-      alert('Σφάλμα κατά τη διαγραφή: ' + e.message);
+      console.error('Image error:', e);
+      alert('Σφάλμα αποστολής εικόνας: ' + e.message);
+    } finally {
+      imageBtn.innerHTML = originalHTML;
+      imageBtn.classList.remove('loading');
     }
-  }
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
 
-  document.getElementById('userIn').addEventListener('keypress', e => { if (e.key === 'Enter') goChat(); });
-  document.getElementById('msgInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
-</script>
-<!--   klidoma apo forma  -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+function showPrivateNotification(sender) { if (pendingPrivateNotif) return; pendingPrivateNotif = sender; document.getElementById('privateNotifText').textContent = 'Ο ' + sender + ' σου έστειλε ιδιωτικό!'; document.getElementById('privateNotifOverlay').classList.add('show'); }
+function acceptPrivateNotification() { if (pendingPrivateNotif) { var sender = pendingPrivateNotif; pendingPrivateNotif = null; document.getElementById('privateNotifOverlay').classList.remove('show'); startPrivateChat(sender); } }
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
-        authDomain: "radiochatlive.firebaseapp.com",
-        projectId: "radiochatlive",
-        storageBucket: "radiochatlive.firebasestorage.app",
-        messagingSenderId: "187137786763",
-        appId: "1:187137786763:web:67c3e2effef793ea7f658e"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // ΑΥΤΟ ΕΙΝΑΙ ΤΟ "ΟΠΛΟ" ΣΟΥ - ΕΛΕΓΧΕΙ ΑΝ Ο ΧΡΗΣΤΗΣ ΥΠΑΡΧΕΙ ΣΤΗ ΒΑΣΗ
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            try {
-                // Αναγκάζει τη Firebase να ελέγξει αν ο λογαριασμός είναι ακόμα ενεργός
-                await user.getIdToken(true);
-            } catch (error) {
-                // Αν τον έχεις διαγράψει, θα "χτυπήσει" σφάλμα εδώ
-                console.log("Ο χρήστης διαγράφηκε. Αποσύνδεση...");
-                localStorage.clear();
-                await signOut(auth);
-                window.location.href = "../index.html"; // Βάλε εδώ το όνομα της σελίδας εγγραφής σου
-            }
-        } else {
-            // Αν δεν είναι καν συνδεδεμένος, τον πετάει έξω
-            localStorage.clear();
-            window.location.href = "../index.html";
+function subscribeToMessages() {
+  channel = client.channel('radiochat-messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+    await ensureAvatarsLoaded([payload.new.user]);
+    
+    if (skipNextOwnImage && payload.new.user === currentUser && payload.new.text === '[📸 Εικόνα]') {
+      skipNextOwnImage = false;
+      return;
+    }
+    
+    if (!currentPrivateChat) {
+      addMessageToUI(payload.new, false);
+      if (payload.new.user.toLowerCase() !== currentUser.toLowerCase()) {
+        playNotificationSound();
+      }
+    }
+  }).subscribe();
+  
+  privateChannel = client.channel('radiochat-private').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, async payload => {
+    var msg = payload.new;
+    await ensureAvatarsLoaded([msg.sender]);
+    
+    if (skipNextOwnPrivateImage && msg.sender === currentUser && msg.message === '[📸 Εικόνα]') {
+      skipNextOwnPrivateImage = false;
+      return;
+    }
+    
+    var isForMe = msg.receiver.toLowerCase() === currentUser.toLowerCase();
+    var isFromMe = msg.sender.toLowerCase() === currentUser.toLowerCase();
+    if (isForMe || isFromMe) {
+      if (currentPrivateChat && currentPrivateChat.toLowerCase() === msg.sender.toLowerCase()) {
+        addMessageToUI(msg, true);
+        if (isForMe) {
+          await client.from('private_messages').update({ is_read: true }).eq('id', msg.id);
         }
-    });
+      } else if (isForMe) {
+        showPrivateNotification(msg.sender);
+      }
+    }
+  }).subscribe();
+}
+
+function setupPresenceInitial() { presenceChannel = client.channel('presence-chat').on('presence', { event: 'sync' }, () => { var state = presenceChannel.presenceState(); onlineUsers = {}; Object.keys(state).forEach(key => { state[key].forEach(p => { if (p.username) { onlineUsers[p.username] = true; if (p.avatar) { var lower = p.username.toLowerCase(); userAvatars[lower] = p.avatar; localStorage.setItem('user_avatar_' + lower, p.avatar); } } }); }); updateUserList(); }).subscribe(); }
+
+async function goChat(isAutoLogin = false) { var inputVal = document.getElementById('userIn').value.trim(); var err = document.getElementById('err'); err.style.display = 'none'; if (!inputVal) return; var username = inputVal.includes(":") ? inputVal.split(":")[0].trim() : inputVal; var password = inputVal.includes(":") ? inputVal.split(":")[1].trim() : ""; var isBanned = await checkIfBanned(username); if (isBanned) { err.textContent = '🚫 Banned!'; err.style.display = 'block'; if (isAutoLogin) localStorage.removeItem('chat_username'); return; } if (username.toLowerCase() === "sakis" && password !== "019630") { if (isAutoLogin) localStorage.removeItem('chat_username'); else { err.textContent = 'Λάθος κωδικός!'; err.style.display = 'block'; } return; } try { const { data: existing } = await client.from('active_sessions').select('session_id').eq('username', username).maybeSingle(); if (existing) { if (existing.session_id !== currentSessionId) { err.textContent = 'Το όνομα είναι κλειδωμένο!'; err.style.display = 'block'; return; } } else { await client.from('active_sessions').insert([{ username: username, session_id: currentSessionId }]); } currentUser = username; localStorage.setItem('chat_username', inputVal); if (currentUser.toLowerCase() === "sakis") { isAdmin = true; document.getElementById('adminClearBtn').style.display = 'block'; document.getElementById('bannedBtn').classList.add('show'); document.getElementById('clearBtn').classList.add('show'); } else { isAdmin = false; document.getElementById('clearBtn').classList.remove('show'); } var trackData = { username: currentUser }; var localAvatar = localStorage.getItem('user_avatar_' + currentUser.toLowerCase()); if (localAvatar) { userAvatars[currentUser.toLowerCase()] = localAvatar; trackData.avatar = localAvatar; } await presenceChannel.track(trackData); document.getElementById('loginDiv').style.display = 'none'; document.getElementById('chatApp').style.display = 'flex'; document.getElementById('msgInput').focus(); await loadMessages(); subscribeToMessages(); subscribeToBans(); } catch(e) { err.textContent = 'Σφάλμα: ' + e.message; err.style.display = 'block'; } }
+
+async function adminClearAll() { if (!isAdmin) return; if (!confirm("⚠️ Διαγραφή ονομάτων;")) return; try { await client.from('active_sessions').delete().neq('username', '---'); alert("✅ Έγινε!"); } catch(e) { alert("Σφάλμα: " + e.message); } }
+async function logoutChat() { if (!confirm("⚠️ Προσοχή: Αν αποσυνδεθείτε, χάνετε τη δέσμευση του ονόματός σας. Αν κάποιος άλλος το πάρει, δεν θα μπορείτε να εισέλθετε ξανά με αυτό το όνομα. Επιβεβαιώνετε;")) return; document.getElementById('playerIframe').src = ''; document.getElementById('playerPanel').classList.remove('show'); isPlayerOpen = false; try { await client.from('active_sessions').delete().eq('username', currentUser); } catch(e) {} if (presenceChannel) await presenceChannel.untrack(); localStorage.removeItem('chat_username'); currentUser = ''; document.getElementById('chatApp').style.display = 'none'; document.getElementById('loginDiv').style.display = 'flex'; }
+function showClearConfirmation() { if (!isAdmin) return; document.getElementById('clearConfirmationOverlay').classList.add('show'); }
+function hideClearConfirmation() { document.getElementById('clearConfirmationOverlay').classList.remove('show'); }
+async function confirmClearMessages() { if (!isAdmin) return; hideClearConfirmation(); try { const { error } = await client.from('messages').delete().neq('id', 0); if (error) throw error; document.getElementById('msgContainer').innerHTML = ''; alert('✅ Διαγράφηκαν!'); } catch(e) { alert('Σφάλμα: ' + e.message); } }
+
+// ✅ Image Preview - Διπλό κλικ για μεγέθυνση
+function openImagePreview(imgSrc) {
+  var overlay = document.getElementById('imagePreviewOverlay');
+  var img = document.getElementById('imagePreviewImg');
+  img.src = imgSrc;
+  overlay.classList.add('show');
+}
+
+function closeImagePreview(event) {
+  if (event.target.id === 'imagePreviewOverlay' || event.target.classList.contains('image-preview-close')) {
+    document.getElementById('imagePreviewOverlay').classList.remove('show');
+  }
+}
+
+document.addEventListener('dblclick', function(e) {
+  var img = e.target;
+  if (img.tagName === 'IMG' && img.closest('.msg .text')) {
+    e.preventDefault();
+    openImagePreview(img.src);
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('imagePreviewOverlay').classList.remove('show');
+  }
+});
+
+document.getElementById('userIn').addEventListener('keypress', e => { if (e.key === 'Enter') goChat(); });
+document.getElementById('msgInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
 </script>
-<!--   klidoma apo forma  -->
 </body>
 </html>
