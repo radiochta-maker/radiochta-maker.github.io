@@ -26,6 +26,8 @@
             max-width: 380px; 
             text-align: center; 
             border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
         }
 
         h2 { font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px; }
@@ -81,93 +83,76 @@
         .hidden { display: none; }
         .fade-in { animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
-	<!--Πληροφορίες -->
-	<style>
-    /* Styling για το μπουτόν */
-    .info-btn {
-        background: #ff3300;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-top: 15px;
-    }
 
-    /* Το φόντο του modal (κλείνει όλη την οθόνη) */
-    .modal-overlay {
-        display: none; /* Κρυφό αρχικά */
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.7);
-        backdrop-filter: blur(5px);
-    }
-
-    /* Το πλαίσιο του περιεχομένου */
-   .modal-content {
-        background: #2a2a2a;
-        margin: 5% auto; /* Το ανέβασες πιο πάνω */
-        padding: 30px;
-        border: 2px solid #ff3300;
-        width: 80%;
-        max-width: 600px;
-        border-radius: 15px;
-        text-align: center;
-        position: relative;
-        color: white; /* Γενικό χρώμα (π.χ. άσπρο) */
-        box-shadow: 0 5px 60px rgba(0, 102, 255,0.5);
-    }
-
-    /* Πρόσθεσε αυτά ακριβώς από κάτω για να ξεχωρίσεις τα χρώματα */
-    .modal-content h3 {
-        color: #007bff; /* Μπλε χρώμα στον τίτλο */
-    }
-
-    .modal-content p {
-        color: #cccccc; /* Ανοιχτό γκρι στο κείμενο */
-    }
-
-    /* Το κουμπί κλεισίματος (X) */
-    .close-modal {
-        position: absolute;
-        right: 15px;
-        top: 10px;
-        color: #aaa;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    .close-modal:hover { color: white; }
-</style>
-
-<script>
-    function openModal() {
-        document.getElementById("infoModal").style.display = "block";
-    }
-
-    function closeModal(event) {
-        // Κλείνει αν πατήσεις το X ή έξω από το παράθυρο
-        if (event.target.id === "infoModal" || event.target.className === "close-modal") {
-            document.getElementById("infoModal").style.display = "none";
+        /* Styling για το μπουτόν Πληροφοριών */
+        .info-btn {
+            background: #ff3300;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+            margin-bottom: 15px;
         }
-    }
-</script>
-	<!--Πληροφορίες -->
+
+        /* Το φόντο του modal */
+        .modal-overlay {
+            display: none; 
+            position: fixed;
+            z-index: 9999; /* Πολύ ψηλό z-index για να βγαίνει μπροστά από όλα */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Το πλαίσιο του περιεχομένου */
+       .modal-content {
+            background: #2a2a2a;
+            margin: 10% auto; 
+            padding: 30px;
+            border: 2px solid #ff3300;
+            width: 85%;
+            max-width: 550px;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            color: white; 
+            box-shadow: 0 5px 60px rgba(0, 102, 255,0.5);
+        }
+
+        .modal-content h3 {
+            color: #007bff; 
+        }
+
+        .modal-content p {
+            color: #cccccc; 
+        }
+
+        /* Το κουμπί κλεισίματος (X) */
+        .close-modal {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover { color: white; }
+    </style>
 </head>
 <body>
 
     <div class="card">
         <div id="signup-box" class="fade-in">
-		      <!--Πληροφορίες -->
-         <button type="button" class="info-btn" onclick="openModal()">Πληροφορίες για την εγγραφή</button>
-             <!--Πληροφορίες -->
+            <h2>Δημιουργία Λογαριασμού</h2>
+            <button type="button" class="info-btn" onclick="openModal()">Πληροφορίες για την εγγραφή</button>
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="password" placeholder="Κωδικός">
             <button class="btn-signup" onclick="signUp()">Εγγραφή & Επιβεβαίωση</button>
@@ -190,115 +175,120 @@
         <div id="msg"></div>
     </div>
 
-   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <div id="infoModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal(event)">&times;</span>
+            <h3 style="margin-bottom: 15px;">Γιατί είναι απαραίτητη η εγγραφή;</h3>
+            <p style="text-align: justify; line-height: 1.5; font-size: 15px;">
+                Η διαδικασία εγγραφής σχεδιάστηκε για τη <strong>διασφάλιση της ποιότητας</strong> της παρέας μας. Με αυτόν τον τρόπο, προστατεύουμε το chat από κακόβουλες συμπεριφορές, διατηρώντας ένα <strong>ασφαλές και φιλικό περιβάλλον</strong> για όλους τους ακροατές μας.
+            </p>
+            
+            <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 14px;">
+                <strong style="display: block; margin-bottom: 10px; color: #ffc107;">Σύντομες Οδηγίες:</strong>
+                <strong>1. Εγγραφή:</strong> Εισάγετε το email σας και έναν κωδικό πρόσβασης.<br><br>
+                <strong>2. Επιβεβαίωση:</strong> Πατήστε το <strong>link επιβεβαίωσης</strong> στο email που θα λάβετε.<br><br>
+                <strong>3. Προσοχή στα Spam:</strong> Ελέγξτε τον φάκελο <strong>"Ανεπιθύμητα"</strong> αν δεν βρίσκετε το email.<br><br>
+                <strong>4. Είσοδος:</strong> Μόλις ενεργοποιήσετε το λογαριασμό, συνδεθείτε για να μπείτε στο ράδιο!
+            </div>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
-        authDomain: "radiochatlive.firebaseapp.com",
-        projectId: "radiochatlive",
-        storageBucket: "radiochatlive.firebasestorage.app",
-        messagingSenderId: "187137786763",
-        appId: "1:187137786763:web:67c3e2effef793ea7f658e"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // ΕΛΕΓΧΟΣ: Αν έχει ξαναμπεί, δείξε το Login αυτόματα
-    window.onload = function() {
-        if (localStorage.getItem("hasVisitedBefore") === "true") {
-            toggleForms();
-        }
-    }
-
-    window.toggleForms = function() {
-        document.getElementById('signup-box').classList.toggle('hidden');
-        document.getElementById('login-box').classList.toggle('hidden');
-        document.getElementById('msg').innerText = "";
-    }
-
-    window.signUp = function() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const msg = document.getElementById('msg');
-        msg.innerText = "Περιμένετε...";
-
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential) => {
-                const user = userCredential.user;
-                // ΣΗΜΑΙΑ: Ο χρήστης έκανε εγγραφή, άρα την επόμενη φορά δείξε Login
-                localStorage.setItem("hasVisitedBefore", "true");
-                
-                await setDoc(doc(db, "users", user.uid), {
-                    email: email,
-                    server: "https://radiochta-maker.github.io/",
-                    registeredAt: new Date().toLocaleString('el-GR')
-                });
-                await sendEmailVerification(user);
-                msg.style.color = "#28a745";
-                msg.innerText = "✅ Η εγγραφή έγινε! Επιβεβαίωσε το email σου.";
-                setTimeout(() => { toggleForms(); }, 2500);
-            })
-            .catch((error) => { msg.innerText = "❌ " + error.message; });
-    }
-
-    window.login = function() {
-        const email = document.getElementById('lEmail').value;
-        const password = document.getElementById('lPassword').value;
-        const msg = document.getElementById('msg');
-
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                if (userCredential.user.emailVerified) {
-                    // ΣΗΜΑΙΑ: Έκανε login, άρα είναι παλιός χρήστης
-                    localStorage.setItem("hasVisitedBefore", "true");
-                    window.location.href = "chat-miro-minima-ola-ok/index.html";
-                } else {
-                    msg.innerText = "⚠️ Επιβεβαιώστε το email σας!";
-                }
-            })
-            .catch(() => { msg.innerText = "❌ Λάθος στοιχεία ή ο χρήστης έχει διαγραφεί!"; });
-    }
-
-    window.forgotPassword = function() {
-        const email = document.getElementById('lEmail').value;
-        const msg = document.getElementById('msg');
-        if(!email) { msg.innerText = "❌ Γράψτε το email σας πρώτα!"; return; }
-        
-        sendPasswordResetEmail(auth, email)
-            .then(() => { msg.innerText = "📧 Το email επαναφοράς στάλθηκε!"; })
-            .catch((error) => { msg.innerText = "❌ " + error.message; });
-    }
-</script>
-
-<!--Πληροφορίες -->
-<div id="infoModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal(event)">&times;</span>
-        <h3 style="color: #007bff; margin-bottom: 15px;">Γιατί είναι απαραίτητη η εγγραφή;</h3>
-        <p style="text-align: justify; line-height: 1.5; font-size: 15px;">
-            Η διαδικασία εγγραφής σχεδιάστηκε για τη <strong>διασφάλιση της ποιότητας</strong> της παρέας μας. Με αυτόν τον τρόπο, προστατεύουμε το chat από κακόβουλες συμπεριφορές, διατηρώντας ένα <strong>ασφαλές και φιλικό περιβάλλον</strong> για όλους τους ακροατές μας.
-        </p>
-        
-        <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 14px;">
-            <strong style="display: block; margin-bottom: 10px; color: #ffc107;">Σύντομες Οδηγίες:</strong>
-            <strong>1. Εγγραφή:</strong> Εισάγετε το email σας και έναν κωδικό πρόσβασης.<br><br>
-            <strong>2. Επιβεβαίωση:</strong> Πατήστε το <strong>link επιβεβαίωσης</strong> στο email που θα λάβετε.<br><br>
-            <strong>3. Προσοχή στα Spam:</strong> Ελέγξτε τον φάκελο <strong>"Ανεπιθύμητα"</strong> αν δεν βρίσκετε το email.<br><br>
-            <strong>4. Είσοδος:</strong> Μόλις ενεργοποιήσετε το λογαριασμό, συνδεθείτε για να μπείτε στο ράδιο!
+            <p style="margin-top: 20px; font-size: 13px; color: #ff4d4d; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: justify;">
+                <strong>Σημαντική Σημείωση:</strong> Η ταυτοποίηση μέσω εγγραφής μας δίνει τον απόλυτο έλεγχο για την προστασία του site. Σε περίπτωση ανάρμοστης συμπεριφοράς, έχουμε τη δυνατότητα να <strong>διαγράψουμε ή να αποκλείσουμε (ban) οριστικά</strong> οποιονδήποτε χρήστη δεν σέβεται τους κανόνες, εμποδίζοντας την εκ νέου είσοδό του στη σελίδα μας.
+            </p>
         </div>
-
-        <p style="margin-top: 20px; font-size: 13px; color: #ff4d4d; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: justify;">
-            <strong>Σημαντική Σημείωση:</strong> Η ταυτοποίηση μέσω εγγραφής μας δίνει τον απόλυτο έλεγχο για την προστασία του site. Σε περίπτωση ανάρμοστης συμπεριφοράς, έχουμε τη δυνατότητα να <strong>διαγράψουμε ή να αποκλείσουμε (ban) οριστικά</strong> οποιονδήποτε χρήστη δεν σέβεται τους κανόνες, εμποδίζοντας την εκ νέου είσοδό του στη σελίδα μας.
-        </p>
     </div>
-</div>
-<!--Πληροφορίες -->
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
+            authDomain: "radiochatlive.firebaseapp.com",
+            projectId: "radiochatlive",
+            storageBucket: "radiochatlive.firebasestorage.app",
+            messagingSenderId: "187137786763",
+            appId: "1:187137786763:web:67c3e2effef793ea7f658e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Συναρτήσεις για το Modal (Διορθωμένες & Ενσωματωμένες στο Module)
+        window.openModal = function() {
+            document.getElementById("infoModal").style.display = "block";
+        }
+
+        window.closeModal = function(event) {
+            if (event.target.id === "infoModal" || event.target.classList.contains("close-modal")) {
+                document.getElementById("infoModal").style.display = "none";
+            }
+        }
+
+        // ΕΛΕΓΧΟΣ: Αν έχει ξαναμπεί, δείξε το Login αυτόματα
+        window.onload = function() {
+            if (localStorage.getItem("hasVisitedBefore") === "true") {
+                toggleForms();
+            }
+        }
+
+        window.toggleForms = function() {
+            document.getElementById('signup-box').classList.toggle('hidden');
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('msg').innerText = "";
+        }
+
+        window.signUp = function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+            msg.innerText = "Περιμένετε...";
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    const user = userCredential.user;
+                    localStorage.setItem("hasVisitedBefore", "true");
+                    
+                    await setDoc(doc(db, "users", user.uid), {
+                        email: email,
+                        server: "megalo chat mazi radio",
+                        registeredAt: new Date().toLocaleString('el-GR')
+                    });
+                    await sendEmailVerification(user);
+                    msg.style.color = "#28a745";
+                    msg.innerText = "✅ Η εγγραφή έγινε! Επιβεβαίωσε το email σου.";
+                    setTimeout(() => { toggleForms(); }, 2500);
+                })
+                .catch((error) => { msg.innerText = "❌ " + error.message; });
+        }
+
+        window.login = function() {
+            const email = document.getElementById('lEmail').value;
+            const password = document.getElementById('lPassword').value;
+            const msg = document.getElementById('msg');
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    if (userCredential.user.emailVerified) {
+                        localStorage.setItem("hasVisitedBefore", "true");
+                        window.location.href = "chat-miro-minima-ola-ok/index.html";
+                    } else {
+                        msg.innerText = "⚠️ Επιβεβαιώστε το email σας!";
+                    }
+                })
+                .catch(() => { msg.innerText = "❌ Λάθος στοιχεία ή ο χρήστης έχει διαγραφεί!"; });
+        }
+
+        window.forgotPassword = function() {
+            const email = document.getElementById('lEmail').value;
+            const msg = document.getElementById('msg');
+            if(!email) { msg.innerText = "❌ Γράψτε το email σας πρώτα!"; return; }
+            
+            sendPasswordResetEmail(auth, email)
+                .then(() => { msg.innerText = "📧 Το email επαναφοράς στάλθηκε!"; })
+                .catch((error) => { msg.innerText = "❌ " + error.message; });
+        }
+    </script>
 </body>
 </html>
