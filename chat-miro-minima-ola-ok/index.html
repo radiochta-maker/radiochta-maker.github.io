@@ -27,7 +27,17 @@
     .exit-private-btn:hover { background: rgba(255,255,255,0.3); }
     .header { background: rgba(22, 33, 62, 0.1); padding: 15px 20px; border-bottom: 2px solid #e94560; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); gap: 10px; }
     .header h2 { color: #e94560; font-size: 1.3em; }
-    .online-badge { background: #10b981; color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+    .online-badge { 
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #10b981;
+  color: #10b981;
+  padding: 8px 18px; 
+  border-radius: 25px; 
+  font-size: 0.9em; 
+  font-weight: bold;
+  box-shadow: 0 0 10px #10b981, inset 0 0 10px rgba(16, 185, 129, 0.3);
+  text-shadow: 0 0 5px #10b981;
+}
     
     .sidebar-toggle-btn {
       display: none;
@@ -690,7 +700,7 @@
     <div class="header" id="mainHeader">
       <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Εμφάνιση Χρηστών">☰</button>
       <h2>💬 RadioChat Live</h2>
-      <div class="online-badge"><span style="color:#10b981">●</span> <span id="onlineNum">0</span> online</div>
+      <div class="online-badge"><span style="color:#ff0000">●</span> <span id="onlineNum">0</span> online</div>
     </div>
     <div class="messages" id="msgContainer"></div>
     <div class="input-area">
