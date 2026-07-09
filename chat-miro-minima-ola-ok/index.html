@@ -947,7 +947,7 @@ async function handleImageUpload(event) {
     return;
   }
   if (file.size > 3 * 1024 * 1024) {
-    alert('Πολύ μεγάλη!');
+    alert('Η φωτογραφία ξεπερνά το όριο των 3MB. Παρακαλώ επιλέξτε μια φωτογραφία με μικρότερη ανάλυση!');
     event.target.value = '';
     return;
   }
@@ -1010,44 +1010,60 @@ function showPrivateNotification(sender) { if (pendingPrivateNotif) return; pend
 function acceptPrivateNotification() { if (pendingPrivateNotif) { var sender = pendingPrivateNotif; pendingPrivateNotif = null; document.getElementById('privateNotifOverlay').classList.remove('show'); startPrivateChat(sender); } }
 
 function subscribeToMessages() {
-  channel = client.channel('radiochat-messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
-    await ensureAvatarsLoaded([payload.new.user]);
-    
-    if (skipNextOwnImage && payload.new.user === currentUser && payload.new.text === '[📸 Εικόνα]') {
-      skipNextOwnImage = false;
-      return;
-    }
-    
-    if (!currentPrivateChat) {
-      addMessageToUI(payload.new, false);
-      if (payload.new.user.toLowerCase() !== currentUser.toLowerCase()) {
-        playNotificationSound();
+  channel = client.channel('radiochat-messages')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+      await ensureAvatarsLoaded([payload.new.user]);
+      
+      if (skipNextOwnImage && payload.new.user === currentUser && payload.new.text === '[📸 Εικόνα]') {
+        skipNextOwnImage = false;
+        return;
       }
-    }
-  }).subscribe();
-  
-  privateChannel = client.channel('radiochat-private').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, async payload => {
-    var msg = payload.new;
-    await ensureAvatarsLoaded([msg.sender]);
-    
-    if (skipNextOwnPrivateImage && msg.sender === currentUser && msg.message === '[📸 Εικόνα]') {
-      skipNextOwnPrivateImage = false;
-      return;
-    }
-    
-    var isForMe = msg.receiver.toLowerCase() === currentUser.toLowerCase();
-    var isFromMe = msg.sender.toLowerCase() === currentUser.toLowerCase();
-    if (isForMe || isFromMe) {
-      if (currentPrivateChat && currentPrivateChat.toLowerCase() === msg.sender.toLowerCase()) {
-        addMessageToUI(msg, true);
-        if (isForMe) {
-          await client.from('private_messages').update({ is_read: true }).eq('id', msg.id);
+      
+      if (!currentPrivateChat) {
+        addMessageToUI(payload.new, false);
+        if (payload.new.user.toLowerCase() !== currentUser.toLowerCase()) {
+          playNotificationSound();
         }
-      } else if (isForMe) {
-        showPrivateNotification(msg.sender);
       }
-    }
-  }).subscribe();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, async payload => {
+      // ✅ Ακαριαίος καθαρισμός δημοσίων μηνυμάτων από όλους τους χρήστες
+      if (!currentPrivateChat) {
+        document.getElementById('msgContainer').innerHTML = '';
+      }
+    })
+    .subscribe();
+  
+  privateChannel = client.channel('radiochat-private')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, async payload => {
+      var msg = payload.new;
+      await ensureAvatarsLoaded([msg.sender]);
+      
+      if (skipNextOwnPrivateImage && msg.sender === currentUser && msg.message === '[📸 Εικόνα]') {
+        skipNextOwnPrivateImage = false;
+        return;
+      }
+      
+      var isForMe = msg.receiver.toLowerCase() === currentUser.toLowerCase();
+      var isFromMe = msg.sender.toLowerCase() === currentUser.toLowerCase();
+      if (isForMe || isFromMe) {
+        if (currentPrivateChat && currentPrivateChat.toLowerCase() === msg.sender.toLowerCase()) {
+          addMessageToUI(msg, true);
+          if (isForMe) {
+            await client.from('private_messages').update({ is_read: true }).eq('id', msg.id);
+          }
+        } else if (isForMe) {
+          showPrivateNotification(msg.sender);
+        }
+      }
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'private_messages' }, async payload => {
+      // ✅ Ακαριαίος καθαρισμός ιδιωτικών μηνυμάτων από όλους τους χρήστες
+      if (currentPrivateChat) {
+        document.getElementById('msgContainer').innerHTML = '';
+      }
+    })
+    .subscribe();
 }
 
 function setupPresenceInitial() { presenceChannel = client.channel('presence-chat').on('presence', { event: 'sync' }, () => { var state = presenceChannel.presenceState(); onlineUsers = {}; Object.keys(state).forEach(key => { state[key].forEach(p => { if (p.username) { onlineUsers[p.username] = true; if (p.avatar) { var lower = p.username.toLowerCase(); userAvatars[lower] = p.avatar; localStorage.setItem('user_avatar_' + lower, p.avatar); } } }); }); updateUserList(); }).subscribe(); }
