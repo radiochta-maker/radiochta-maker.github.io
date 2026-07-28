@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ράδιο Γαρύφαλλο</title>
+    
+    <script src="jquery-3.2.1.min.js"></script>
+    <script src="nativeflashradiov4.js"></script>
+    
+    <style>
+        :root {
+            --bg-overlay-opacity: 0.6; 
+        }
+        
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, var(--bg-overlay-opacity));
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .player-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        /* Εξαναγκασμένη εμφάνιση των τίτλων */
+        #player_texttitle, .playertexttitlespan {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        #player_texttitle {
+            font-size: 26px !important; 
+        }
+
+        .playertexttitlespan {
+            font-size: 34px !important; 
+            margin-top: 5px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-container"> 
+        <div id="player" class="lunaaudioplayer" style="width: 100%; height: 100%;">
+            <script>
+                $(document).ready(function() {
+                    $("#player").lunaradio({
+                        userinterface: "big", 
+                        backgroundcolor: "transparent",
+                        fontcolor: "#ff33cc",
+                        hightlightcolor: "#ffffff", 
+                        fontname: "Unica One", 
+                        googlefont: "Unica+One&display=swap", 
+                        fontratio: "0.5", 
+                        radioname: "Ράδιο Γαρύφαλλο LIVE", 
+                        scroll: "true", 
+                        coverimage: "logo.png",
+                        onlycoverimage: "true",
+                        coverstyle: "animated",
+                        usevisualizer: "real", 
+                        visualizertype: "6", 
+                        itunestoken: "1000lIPN", 
+                        metadatatechnic: "corsproxy", 
+                        corsproxy: "index.php?acao=musica&", 
+                        usestreamcorsproxy: "false",
+                        streamurl: "https://stream.zeno.fm/gloxyymixiluv", 
+                        streamtype: "shoutcast2", 
+                        shoutcastpath: "/stream",
+                        shoutcastid: "1", 
+                        metadatainterval: "30000", 
+                        volume: "100",
+                        debug: "false",
+                        autoplay: "true",
+                        multicolorvisualizer: "true",
+                        color1: "#66ff33",
+                        color2: "#3399ff",
+                        color3: "#ffff00",
+                        color4: "#cc3300",
+                        displayliveicon: "true"
+                    });
+                });
+            </script>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const zenoStationId = "gloxyymixiluv";
+            const metadataUrl = `https://api.zeno.fm/mounts/metadata/subscribe/${zenoStationId}`;
+            const defaultTitle = "live streaming radio garifalo";
+            let currentTitle = defaultTitle;
+
+            // Συνάρτηση που ΕΞΑΝΑΓΚΑΖΕΙ την ενημέρωση παντού
+            function forceUpdateTitle(title) {
+                currentTitle = title;
+                
+                // 1. Στέλνουμε ακαριαία τον τίτλο στο Chat (Γονικό παράθυρο)
+                if (window.parent !== window) {
+                    window.parent.postMessage({ 
+                        type: 'RADIO_TITLE_UPDATE', 
+                        title: currentTitle 
+                    }, '*');
+                }
+
+                // 2. Εξαναγκασμένη εγγραφή στο DOM του player (αγνοώντας το plugin)
+                const titleElements = document.querySelectorAll('#player_texttitle, .playertexttitlespan');
+                titleElements.forEach(el => {
+                    if (el) {
+                        el.textContent = currentTitle;
+                        el.style.display = 'block';
+                        el.style.visibility = 'visible';
+                    }
+                });
+            }
+
+            // Αρχική ενημέρωση αμέσως
+            forceUpdateTitle(defaultTitle);
+
+            // 3. Ακρόαση του Zeno.fm API (Η πιο αξιόπιστη και άμεση μέθοδος)
+            let eventSource = new EventSource(metadataUrl);
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data && data.streamTitle && data.streamTitle.trim() !== "") {
+                        const newTitle = data.streamTitle.trim();
+                        // Ενημέρωση ΜΟΝΟ αν ο τίτλος έχει πραγματικά αλλάξει
+                        if (newTitle !== currentTitle) {
+                            forceUpdateTitle(newTitle);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Σφάλμα JSON:", e);
+                }
+            };
+
+            eventSource.onerror = function() {
+                console.warn("Επανασύνδεση στο Zeno API...");
+                eventSource.close();
+                setTimeout(() => {
+                    eventSource = new EventSource(metadataUrl);
+                }, 5000);
+            };
+
+            // 4. BACKUP ΜΗΧΑΝΙΣΜΟΣ: Αν το plugin προσπαθήσει να σβήσει ή να αλλάξει τον τίτλο, 
+            // τον επαναφέρουμε κάθε 5 δευτερόλεπτα για να είμαστε 100% σίγουροι.
+            setInterval(() => {
+                const titleElements = document.querySelectorAll('#player_texttitle, .playertexttitlespan');
+                titleElements.forEach(el => {
+                    if (el && el.textContent.trim() !== currentTitle) {
+                        el.textContent = currentTitle;
+                    }
+                });
+            }, 5000);
+        });
+    </script>
+
+</body>
+</html>
