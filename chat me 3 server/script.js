@@ -59,7 +59,7 @@ function disconnectPlayer() {
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
 
-var notificationSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+var notificationSound = new Audio('minima.mp3');
 var soundVolume = 1.0;
 var soundStates = [{ volume: 1.0, icon: '🔊' }, { volume: 0.3, icon: '🔉' }, { volume: 0, icon: '🔇' }];
 var currentSoundState = 0;
@@ -678,11 +678,35 @@ async function logoutChat() {
 function showClearConfirmation() { if (!isAdmin) return; document.getElementById('clearConfirmationOverlay').classList.add('show'); }
 function hideClearConfirmation() { document.getElementById('clearConfirmationOverlay').classList.remove('show'); }
 async function confirmClearMessages() {
-  if (!isAdmin) return; hideClearConfirmation();
+  if (!isAdmin) return; 
+  hideClearConfirmation();
+  
   try {
-    await client.from('messages').delete().neq('id', -1);
-    alert('✅ Διαγράφηκαν!');
-  } catch(e) { alert('Σφάλμα: ' + e.message); }
+    // Διαγραφή ΟΛΩΝ των δημόσιων μηνυμάτων 
+    // Το .not('id', 'is', 'null') είναι ασφαλές και λειτουργεί είτε το id είναι αριθμός είτε UUID
+    const { error: err1 } = await client.from('messages').delete().not('id', 'is', 'null');
+    
+    if (err1) {
+      console.error('Σφάλμα messages:', err1);
+      alert('Σφάλμα διαγραφής: ' + err1.message);
+      return;
+    }
+
+    // Διαγραφή και των ιδιωτικών μηνυμάτων για πλήρη καθαρισμό
+    const { error: err2 } = await client.from('private_messages').delete().not('id', 'is', 'null');
+    if (err2) {
+      console.error('Σφάλμα private_messages:', err2);
+    }
+
+    alert('✅ Όλα τα μηνύματα διαγράφηκαν επιτυχώς!');
+    
+    // Άμεσος καθαρισμός της οθόνης για άμεση οπτική επιβεβαίωση
+    document.getElementById('msgContainer').innerHTML = '';
+    
+  } catch(e) { 
+    console.error('Εξαίρεση:', e);
+    alert('Σφάλμα: ' + e.message); 
+  }
 }
 
 function openImagePreview(imgSrc) { var overlay = document.getElementById('imagePreviewOverlay'); var img = document.getElementById('imagePreviewImg'); img.src = imgSrc; overlay.classList.add('show'); }
