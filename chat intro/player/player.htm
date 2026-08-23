@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="el">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>radio live</title>
+
+    <script src="jquery-3.2.1.min.js"></script>
+    <script src="nativeflashradiov4.js"></script>
+
+
+    <style>
+
+        :root {
+
+            --pink: #ff33cc;
+            --pink-light: #ff66dd;
+            --white: #ffffff;
+
+            --bg-overlay-opacity: 0.6;
+
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html,
+        body {
+
+            width: 100%;
+            height: 100%;
+
+            margin: 0;
+            padding: 0;
+
+        }
+
+
+        body {
+
+            background: #100817;
+
+            overflow: hidden;
+
+        }
+
+
+        /* =========================================================
+           MAIN BODY OVERLAY
+        ========================================================= */
+
+        body::after {
+
+            content: "";
+
+            position: fixed;
+
+            top: 0;
+            left: 0;
+
+            width: 100%;
+            height: 100%;
+
+            background-color:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    var(--bg-overlay-opacity)
+                );
+
+            z-index: -1;
+
+            pointer-events: none;
+
+        }
+
+
+        /* =========================================================
+           RADIO PLAYER
+        ========================================================= */
+
+        .player-container {
+
+            width: 100%;
+            height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+            align-items: center;
+
+            position: relative;
+
+        }
+
+
+        #player_texttitle,
+        .playertexttitlespan {
+
+            display: block !important;
+
+            /* Κρύβουμε τον τίτλο μέχρι να έρθει πραγματικό metadata από Zeno.
+               Έτσι δεν εμφανίζεται προσωρινά HTML/CSS του player. */
+            visibility: hidden !important;
+
+            opacity: 0 !important;
+
+        }
+
+
+        #player_texttitle {
+
+            font-size: 26px !important;
+
+        }
+
+
+        .playertexttitlespan {
+
+            font-size: 34px !important;
+
+            margin-top: 5px !important;
+
+        }
+
+
+        /* =========================================================
+           INTRO SCREEN
+        ========================================================= */
+
+        #startOverlay {
+
+            position: fixed;
+
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+
+            overflow: hidden;
+
+
+            background:
+
+                radial-gradient(
+                    circle at 50% 42%,
+                    rgba(255, 51, 204, 0.22) 0%,
+                    rgba(123, 31, 162, 0.18) 25%,
+                    rgba(35, 12, 55, 0.88) 58%,
+                    #100817 100%
+                );
+
+
+            z-index: 100000;
+
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+
+            opacity: 1;
+
+            visibility: visible;
+
+
+            transition:
+
+                opacity 0.9s ease,
+
+                visibility 0.9s ease;
+
+        }
+
+
+        /* =========================================================
+           MOVING AMBIENT LIGHT
+        ========================================================= */
+
+        #startOverlay::before {
+
+            content: "";
+
+            position: absolute;
+
+            inset: -20%;
+
+
+            background:
+
+                radial-gradient(
+                    ellipse at 20% 30%,
+                    rgba(255, 51, 204, 0.20),
+                    transparent 38%
+                ),
+
+                radial-gradient(
+                    ellipse at 80% 20%,
+                    rgba(120, 70, 255, 0.18),
+                    transparent 38%
+                ),
+
+                radial-gradient(
+                    ellipse at 75% 80%,
+                    rgba(255, 0, 153, 0.14),
+                    transparent 40%
+                ),
+
+                radial-gradient(
+                    ellipse at 15% 85%,
+                    rgba(90, 30, 180, 0.18),
+                    transparent 40%
+                );
+
+
+            filter: blur(45px);
+
+
+            animation:
+
+                ambientMove
+                14s
+                ease-in-out
+                infinite
+                alternate;
+
+
+            pointer-events: none;
+
+        }
+
+
+        @keyframes ambientMove {
+
+            0% {
+
+                transform:
+
+                    translate3d(
+                        -3%,
+                        -2%,
+                        0
+                    )
+
+                    scale(1);
+
+            }
+
+
+            50% {
+
+                transform:
+
+                    translate3d(
+                        3%,
+                        2%,
+                        0
+                    )
+
+                    scale(1.06);
+
+            }
+
+
+            100% {
+
+                transform:
+
+                    translate3d(
+                        -1%,
+                        4%,
+                        0
+                    )
+
+                    scale(1.02);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           DARK CINEMATIC VIGNETTE
+        ========================================================= */
+
+        #startOverlay::after {
+
+            content: "";
+
+            position: absolute;
+
+            inset: 0;
+
+
+            background:
+
+                radial-gradient(
+                    circle at center,
+                    transparent 0%,
+                    rgba(10, 4, 18, 0.15) 55%,
+                    rgba(5, 2, 10, 0.45) 100%
+                );
+
+
+            pointer-events: none;
+
+        }
+
+
+        /* =========================================================
+           HIDE INTRO
+        ========================================================= */
+
+        #startOverlay.hide {
+
+            opacity: 0;
+
+            visibility: hidden;
+
+            pointer-events: none;
+
+        }
+
+
+        /* =========================================================
+           CENTER GLOW
+        ========================================================= */
+
+        .intro-glow {
+
+            position: absolute;
+
+            width: 520px;
+            height: 520px;
+
+
+            background:
+
+                radial-gradient(
+                    circle,
+                    rgba(255, 51, 204, 0.24) 0%,
+                    rgba(180, 40, 220, 0.12) 30%,
+                    rgba(100, 40, 180, 0.05) 55%,
+                    transparent 72%
+                );
+
+
+            border-radius: 50%;
+
+
+            filter: blur(35px);
+
+
+            animation:
+
+                introGlow
+                7s
+                ease-in-out
+                infinite;
+
+
+            pointer-events: none;
+
+        }
+
+
+        @keyframes introGlow {
+
+            0%,
+            100% {
+
+                transform:
+
+                    scale(0.90)
+                    translateY(0);
+
+                opacity: 0.65;
+
+            }
+
+
+            50% {
+
+                transform:
+
+                    scale(1.12)
+                    translateY(-12px);
+
+                opacity: 1;
+
+            }
+
+        }
+
+
+        /* =========================================================
+           INTRO CONTENT
+        ========================================================= */
+
+        .intro-content {
+
+            position: relative;
+
+            z-index: 5;
+
+
+            width:
+                min(
+                    90%,
+                    520px
+                );
+
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            text-align: center;
+
+
+            font-family:
+
+                'Unica One',
+                Arial,
+                sans-serif;
+
+
+            /*
+             * Η κλίμακα ελέγχεται από JavaScript
+             * ώστε ΟΛΟ το intro να χωράει στην οθόνη.
+             */
+
+            --intro-scale: 1;
+
+
+            transform:
+                scale(var(--intro-scale));
+
+
+            transform-origin:
+                center center;
+
+
+            animation:
+                introAppear
+                1s
+                ease
+                forwards;
+
+        }
+
+
+        @keyframes introAppear {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    scale(
+                        calc(
+                            var(--intro-scale) * 0.97
+                        )
+                    )
+                    translateY(20px);
+
+            }
+
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    scale(
+                        var(--intro-scale)
+                    )
+                    translateY(0);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           LOGO
+        ========================================================= */
+
+        .intro-logo-wrapper {
+
+            position: relative;
+
+
+            width: 180px;
+            height: 180px;
+
+
+            display: flex;
+
+
+            justify-content: center;
+
+            align-items: center;
+
+
+            margin-bottom: 28px;
+
+        }
+
+
+        .intro-logo-ring {
+
+            position: absolute;
+
+
+            width: 100%;
+            height: 100%;
+
+
+            border:
+
+                1px solid
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.35
+                );
+
+
+            border-radius: 50%;
+
+
+            animation:
+
+                logoRing
+                7s
+                linear
+                infinite;
+
+        }
+
+
+        .intro-logo-ring::before {
+
+            content: "";
+
+
+            position: absolute;
+
+
+            width: 8px;
+            height: 8px;
+
+
+            background:
+
+                var(--pink);
+
+
+            border-radius: 50%;
+
+
+            top: -4px;
+
+            left: 50%;
+
+
+            transform:
+
+                translateX(-50%);
+
+
+            box-shadow:
+
+                0 0 10px
+                var(--pink),
+
+                0 0 25px
+                var(--pink);
+
+        }
+
+
+        @keyframes logoRing {
+
+            from {
+
+                transform:
+                    rotate(0deg);
+
+            }
+
+
+            to {
+
+                transform:
+                    rotate(360deg);
+
+            }
+
+        }
+
+
+        .intro-logo {
+
+            position: relative;
+
+
+            width: 135px;
+            height: 135px;
+
+
+            object-fit: contain;
+
+
+            border-radius: 50%;
+
+
+            filter:
+
+                drop-shadow(
+                    0 0 12px
+                    rgba(
+                        255,
+                        51,
+                        204,
+                        0.35
+                    )
+                );
+
+
+            animation:
+
+                logoFloat
+                4s
+                ease-in-out
+                infinite;
+
+        }
+
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+
+                transform:
+                    translateY(0);
+
+            }
+
+
+            50% {
+
+                transform:
+                    translateY(-5px);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           STATION NAME
+        ========================================================= */
+
+        .intro-station {
+
+            color:
+                var(--white);
+
+
+            font-size: 38px;
+
+
+            line-height: 1;
+
+
+            letter-spacing: 4px;
+
+
+            text-transform:
+                uppercase;
+
+
+            margin-bottom: 12px;
+
+
+            text-shadow:
+
+                0 0 10px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.35
+                );
+
+        }
+
+
+        /* =========================================================
+           LIVE BADGE
+        ========================================================= */
+
+        .intro-live {
+
+            display: inline-flex;
+
+
+            align-items: center;
+
+            justify-content: center;
+
+
+            gap: 8px;
+
+
+            color:
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.8
+                );
+
+
+            font-size: 13px;
+
+
+            letter-spacing: 4px;
+
+
+            text-transform:
+                uppercase;
+
+
+            margin-bottom: 38px;
+
+        }
+
+
+        .intro-live-dot {
+
+            width: 7px;
+            height: 7px;
+
+
+            background:
+                var(--pink);
+
+
+            border-radius: 50%;
+
+
+            box-shadow:
+
+                0 0 8px
+                var(--pink),
+
+                0 0 18px
+                var(--pink);
+
+
+            animation:
+
+                livePulse
+                1.5s
+                infinite;
+
+        }
+
+
+        @keyframes livePulse {
+
+            0% {
+
+                opacity: 1;
+
+                transform:
+                    scale(1);
+
+            }
+
+
+            50% {
+
+                opacity: 0.35;
+
+                transform:
+                    scale(0.65);
+
+            }
+
+
+            100% {
+
+                opacity: 1;
+
+                transform:
+                    scale(1);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           EQUALIZER
+        ========================================================= */
+
+        .intro-equalizer {
+
+            height: 42px;
+
+
+            display: flex;
+
+
+            align-items: center;
+
+            justify-content: center;
+
+
+            gap: 4px;
+
+
+            margin-bottom: 32px;
+
+        }
+
+
+        .eq-bar {
+
+            width: 4px;
+
+
+            background:
+
+                linear-gradient(
+                    to top,
+                    var(--pink),
+                    var(--pink-light)
+                );
+
+
+            border-radius: 10px;
+
+
+            animation:
+
+                equalizer
+                1s
+                ease-in-out
+                infinite;
+
+        }
+
+
+        .eq-bar:nth-child(1) {
+
+            height: 14px;
+
+            animation-delay: 0.1s;
+
+        }
+
+
+        .eq-bar:nth-child(2) {
+
+            height: 27px;
+
+            animation-delay: 0.25s;
+
+        }
+
+
+        .eq-bar:nth-child(3) {
+
+            height: 38px;
+
+            animation-delay: 0.05s;
+
+        }
+
+
+        .eq-bar:nth-child(4) {
+
+            height: 22px;
+
+            animation-delay: 0.35s;
+
+        }
+
+
+        .eq-bar:nth-child(5) {
+
+            height: 34px;
+
+            animation-delay: 0.15s;
+
+        }
+
+
+        .eq-bar:nth-child(6) {
+
+            height: 18px;
+
+            animation-delay: 0.4s;
+
+        }
+
+
+        .eq-bar:nth-child(7) {
+
+            height: 30px;
+
+            animation-delay: 0.2s;
+
+        }
+
+
+        .eq-bar:nth-child(8) {
+
+            height: 15px;
+
+            animation-delay: 0.3s;
+
+        }
+
+
+        @keyframes equalizer {
+
+            0%,
+            100% {
+
+                transform:
+                    scaleY(0.35);
+
+                opacity: 0.5;
+
+            }
+
+
+            50% {
+
+                transform:
+                    scaleY(1);
+
+                opacity: 1;
+
+            }
+
+        }
+
+
+        /* =========================================================
+           PLAY BUTTON
+        ========================================================= */
+
+        #startBtn {
+
+            position: relative;
+
+
+            width: 82px;
+            height: 82px;
+
+
+            border-radius: 50%;
+
+
+            border:
+
+                1px solid
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.7
+                );
+
+
+            background:
+
+                radial-gradient(
+                    circle,
+                    rgba(
+                        255,
+                        51,
+                        204,
+                        0.2
+                    ),
+                    rgba(
+                        255,
+                        51,
+                        204,
+                        0.04
+                    )
+                );
+
+
+            color:
+                #fff;
+
+
+            cursor:
+                pointer;
+
+
+            display: flex;
+
+
+            justify-content:
+                center;
+
+            align-items:
+                center;
+
+
+            font-size: 27px;
+
+
+            padding-left: 5px;
+
+
+            box-shadow:
+
+                0 0 20px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.25
+                ),
+
+                inset 0 0 20px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.05
+                );
+
+
+            transition:
+
+                transform 0.3s ease,
+
+                box-shadow 0.3s ease,
+
+                background 0.3s ease;
+
+        }
+
+
+        #startBtn::before {
+
+            content: "";
+
+
+            position: absolute;
+
+
+            inset: -9px;
+
+
+            border:
+
+                1px solid
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.2
+                );
+
+
+            border-radius: 50%;
+
+
+            animation:
+
+                playRing
+                2.5s
+                ease-out
+                infinite;
+
+        }
+
+
+        @keyframes playRing {
+
+            0% {
+
+                transform:
+                    scale(0.9);
+
+                opacity: 0.8;
+
+            }
+
+
+            100% {
+
+                transform:
+                    scale(1.35);
+
+                opacity: 0;
+
+            }
+
+        }
+
+
+        #startBtn:hover {
+
+            transform:
+                scale(1.08);
+
+
+            background:
+
+                radial-gradient(
+                    circle,
+                    rgba(
+                        255,
+                        51,
+                        204,
+                        0.4
+                    ),
+                    rgba(
+                        255,
+                        51,
+                        204,
+                        0.08
+                    )
+                );
+
+
+            box-shadow:
+
+                0 0 30px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.55
+                ),
+
+                inset 0 0 25px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.1
+                );
+
+        }
+
+
+        #startBtn:active {
+
+            transform:
+                scale(0.96);
+
+        }
+
+
+        /* =========================================================
+           INTRO STATUS
+        ========================================================= */
+
+        #introStatus {
+
+            display: none;
+
+
+            margin-top: 22px;
+
+
+            color:
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.85
+                );
+
+
+            font-size: 14px;
+
+
+            letter-spacing: 3px;
+
+
+            text-transform:
+                uppercase;
+
+
+            animation:
+
+                statusPulse
+                1.5s
+                ease-in-out
+                infinite;
+
+        }
+
+
+        @keyframes statusPulse {
+
+            0%,
+            100% {
+
+                opacity: 0.45;
+
+            }
+
+
+            50% {
+
+                opacity: 1;
+
+            }
+
+        }
+
+
+        /* =========================================================
+           INTRO PROGRESS
+        ========================================================= */
+
+        #introProgressWrapper {
+
+            display: none;
+
+
+            width:
+                min(
+                    300px,
+                    75vw
+                );
+
+
+            margin-top: 20px;
+
+        }
+
+
+        .intro-progress-track {
+
+            width: 100%;
+
+            height: 3px;
+
+
+            background:
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+
+
+            border-radius: 10px;
+
+
+            overflow: hidden;
+
+        }
+
+
+        #introProgress {
+
+            width: 0%;
+
+            height: 100%;
+
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    var(--pink),
+                    var(--pink-light)
+                );
+
+
+            box-shadow:
+
+                0 0 10px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.7
+                );
+
+
+            transition:
+
+                width 0.15s linear;
+
+        }
+
+
+        /* =========================================================
+           SKIP INTRO
+        ========================================================= */
+
+        #skipIntroBtn {
+
+            display: none;
+
+
+            margin-top: 18px;
+
+
+            padding: 8px 15px;
+
+
+            background:
+                transparent;
+
+
+            border:
+                none;
+
+
+            color:
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.55
+                );
+
+
+            font-family:
+
+                'Unica One',
+                Arial,
+                sans-serif;
+
+
+            font-size: 12px;
+
+
+            letter-spacing: 2px;
+
+
+            text-transform:
+                uppercase;
+
+
+            cursor:
+                pointer;
+
+
+            transition:
+
+                color 0.25s ease,
+
+                transform 0.25s ease;
+
+        }
+
+
+        #skipIntroBtn:hover {
+
+            color:
+                #fff;
+
+
+            transform:
+                translateX(3px);
+
+        }
+
+
+        /* =========================================================
+           BOTTOM TEXT
+        ========================================================= */
+
+        .intro-bottom {
+
+            position: absolute;
+
+
+            bottom: 30px;
+
+
+            left: 0;
+            right: 0;
+
+
+            z-index: 5;
+
+
+            text-align:
+                center;
+
+
+            color:
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.28
+                );
+
+
+            font-family:
+                Arial,
+                sans-serif;
+
+
+            font-size: 10px;
+
+
+            letter-spacing: 3px;
+
+
+            text-transform:
+                uppercase;
+
+        }
+
+
+        /* =========================================================
+           LOADING MODAL
+        ========================================================= */
+
+        #loadingModal {
+
+            display: none;
+
+
+            position: fixed;
+
+
+            top: 0;
+            left: 0;
+
+
+            width: 100%;
+            height: 100%;
+
+
+            background-color:
+
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.85
+                );
+
+
+            z-index: 99999;
+
+
+            justify-content:
+                center;
+
+            align-items:
+                center;
+
+
+            font-family:
+                'Unica One',
+                sans-serif;
+
+        }
+
+
+        #loadingModal .modal-box {
+
+            background-color:
+                #1a1a1a;
+
+
+            padding:
+                40px 60px;
+
+
+            border-radius:
+                15px;
+
+
+            border:
+                2px solid
+                var(--pink);
+
+
+            text-align:
+                center;
+
+
+            box-shadow:
+
+                0 0 30px
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.5
+                );
+
+        }
+
+
+        #loadingModal .modal-title {
+
+            color:
+                var(--pink);
+
+
+            font-size:
+                28px;
+
+
+            margin-bottom:
+                20px;
+
+        }
+
+
+        #loadingModal .modal-text {
+
+            color:
+                #ffffff;
+
+
+            font-size:
+                20px;
+
+        }
+
+
+        #loadingModal .modal-spinner {
+
+            margin-top:
+                25px;
+
+
+            width:
+                50px;
+
+            height:
+                50px;
+
+
+            border:
+                4px solid
+                rgba(
+                    255,
+                    51,
+                    204,
+                    0.3
+                );
+
+
+            border-top:
+                4px solid
+                var(--pink);
+
+
+            border-radius:
+                50%;
+
+
+            animation:
+                spin
+                1s
+                linear
+                infinite;
+
+
+            margin-left:
+                auto;
+
+            margin-right:
+                auto;
+
+        }
+
+
+        @keyframes spin {
+
+            0% {
+
+                transform:
+                    rotate(0deg);
+
+            }
+
+
+            100% {
+
+                transform:
+                    rotate(360deg);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           MOBILE
+        ========================================================= */
+
+        @media (max-width: 600px) {
+
+
+            .intro-glow {
+
+                width: 380px;
+                height: 380px;
+
+            }
+
+
+            .intro-logo-wrapper {
+
+                width: 145px;
+                height: 145px;
+
+                margin-bottom: 24px;
+
+            }
+
+
+            .intro-logo {
+
+                width: 110px;
+                height: 110px;
+
+            }
+
+
+            .intro-station {
+
+                font-size: 30px;
+
+                letter-spacing: 3px;
+
+            }
+
+
+            .intro-live {
+
+                font-size: 11px;
+
+                letter-spacing: 3px;
+
+                margin-bottom: 28px;
+
+            }
+
+
+            .intro-equalizer {
+
+                margin-bottom: 28px;
+
+            }
+
+
+            #startBtn {
+
+                width: 74px;
+                height: 74px;
+
+                font-size: 24px;
+
+            }
+
+
+            .intro-bottom {
+
+                bottom: 20px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================================================
+         INTRO SCREEN
+    ========================================================= -->
+
+    <div id="startOverlay">
+
+
+        <div class="intro-glow"></div>
+
+
+        <div class="intro-content">
+
+
+            <div class="intro-logo-wrapper">
+
+                <div class="intro-logo-ring"></div>
+
+                <img
+                    src="intro.png"
+                    alt="Radio Live"
+                    class="intro-logo"
+                >
+
+            </div>
+
+
+            <div class="intro-station">
+
+                RADIO LIVE
+
+            </div>
+
+
+            <div class="intro-live">
+
+                <span class="intro-live-dot"></span>
+
+                LIVE RADIO
+
+            </div>
+
+
+            <div class="intro-equalizer">
+
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+
+            </div>
+
+
+            <button
+                id="startBtn"
+                aria-label="Play Radio"
+            >
+
+                ▶
+
+            </button>
+
+
+            <div id="introStatus">
+
+                INTRO PLAYING
+
+            </div>
+
+
+            <div id="introProgressWrapper">
+
+                <div class="intro-progress-track">
+
+                    <div id="introProgress"></div>
+
+                </div>
+
+            </div>
+
+
+            <button id="skipIntroBtn">
+
+                SKIP INTRO →
+
+            </button>
+
+
+        </div>
+
+
+        <div class="intro-bottom">
+
+            TURN UP THE VOLUME • LIVE
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================================================
+         INTRO AUDIO
+    ========================================================= -->
+
+    <audio
+        id="introAudio"
+        src="radio spot.mp3"
+        preload="auto"
+    ></audio>
+
+
+    <!-- =========================================================
+         RADIO PLAYER
+    ========================================================= -->
+
+    <div class="player-container">
+
+        <div
+            id="player"
+            class="lunaaudioplayer"
+            style="
+                width: 100%;
+                height: 100%;
+            "
+        ></div>
+
+    </div>
+
+
+    <!-- =========================================================
+         LOADING MODAL
+    ========================================================= -->
+
+    <div id="loadingModal">
+
+        <div class="modal-box">
+
+            <div class="modal-title">
+
+                Παρακαλώ περιμένετε
+
+            </div>
+
+
+            <div class="modal-text">
+
+                Φόρτωση live streaming...
+
+            </div>
+
+
+            <div class="modal-spinner"></div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+
+        /* =========================================================
+           INTRO RESPONSIVE SCALE
+           
+           Το intro γίνεται scale σαν μία ενιαία μονάδα.
+           Δεν υπάρχει scrollbar.
+           Δεν αλλάζει το background.
+        ========================================================= */
+
+        function resizeIntro() {
+
+            const overlay =
+                document.getElementById(
+                    "startOverlay"
+                );
+
+
+            const content =
+                document.querySelector(
+                    ".intro-content"
+                );
+
+
+            if (!overlay || !content) {
+
+                return;
+
+            }
+
+
+            /*
+             * Αφαιρούμε προσωρινά το scale ώστε
+             * να πάρουμε τις πραγματικές διαστάσεις.
+             */
+
+            content.style.setProperty(
+                "--intro-scale",
+                "1"
+            );
+
+
+            requestAnimationFrame(
+                function () {
+
+                    const viewportWidth =
+                        window.innerWidth;
+
+
+                    const viewportHeight =
+                        window.innerHeight;
+
+
+                    const contentWidth =
+                        content.offsetWidth;
+
+
+                    const contentHeight =
+                        content.offsetHeight;
+
+
+                    if (
+                        !contentWidth ||
+                        !contentHeight
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Μικρό περιθώριο ώστε το intro
+                     * να μην ακουμπάει στις άκρες.
+                     */
+
+                    const availableWidth =
+                        viewportWidth * 0.94;
+
+
+                    const availableHeight =
+                        viewportHeight * 0.88;
+
+
+                    const scaleByWidth =
+                        availableWidth /
+                        contentWidth;
+
+
+                    const scaleByHeight =
+                        availableHeight /
+                        contentHeight;
+
+
+                    /*
+                     * Κρατάμε πάντα το κανονικό μέγεθος
+                     * όταν υπάρχει αρκετός χώρος.
+                     */
+
+                    const scale =
+                        Math.min(
+                            1,
+                            scaleByWidth,
+                            scaleByHeight
+                        );
+
+
+                    content.style.setProperty(
+                        "--intro-scale",
+                        scale.toFixed(4)
+                    );
+
+                }
+            );
+
+        }
+
+
+
+        /* =========================================================
+           RADIO PLAYER
+        ========================================================= */
+
+        function startRadioPlayer() {
+
+
+            if (window.radioStarted) {
+
+                return;
+
+            }
+
+
+            window.radioStarted = true;
+
+
+            $("#player").lunaradio({
+
+
+                userinterface:
+                    "big",
+
+
+                backgroundcolor:
+                    "transparent",
+
+
+                fontcolor:
+                    "#ff33cc",
+
+
+                hightlightcolor:
+                    "#ffffff",
+
+
+                fontname:
+                    "Unica One",
+
+
+                googlefont:
+                    "Unica+One&display=swap",
+
+
+                fontratio:
+                    "0.5",
+
+
+                radioname:
+                    "radio live",
+
+
+                scroll:
+                    "true",
+
+
+                coverimage:
+                    "logo.png",
+
+
+                onlycoverimage:
+                    "true",
+
+
+                coverstyle:
+                    "animated",
+
+
+                usevisualizer:
+                    "real",
+
+
+                visualizertype:
+                    "6",
+
+
+                itunestoken:
+                    "1000lIPN",
+
+
+                /*
+                 * ΔΕΝ χρησιμοποιούμε το metadata system του LunaRadio.
+                 * Το metadata έρχεται αποκλειστικά από το Zeno EventSource
+                 * παρακάτω. Το κενό ownmetadataurl προκαλούσε στον player
+                 * να διαβάζει περιεχόμενο της σελίδας σαν τίτλο.
+                 */
+                metadatainterval:
+                    "999999999",
+
+
+                usestreamcorsproxy:
+                    "false",
+
+
+                streamurl:
+                    "https://stream.zeno.fm/x8gduy6xd48uv",
+
+
+                streamtype:
+                    "shoutcast2",
+
+
+                shoutcastpath:
+                    "/stream",
+
+
+                shoutcastid:
+                    "1",
+
+
+                volume:
+                    "100",
+
+
+                debug:
+                    "false",
+
+
+                autoplay:
+                    "true",
+
+
+                multicolorvisualizer:
+                    "true",
+
+
+                color1:
+                    "#66ff33",
+
+
+                color2:
+                    "#3399ff",
+
+
+                color3:
+                    "#ffff00",
+
+
+                color4:
+                    "#cc3300",
+
+
+                displayliveicon:
+                    "true"
+
+
+            });
+
+        }
+
+
+
+        /* =========================================================
+           INTRO LOGIC
+        ========================================================= */
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+
+                const startOverlay =
+                    document.getElementById(
+                        "startOverlay"
+                    );
+
+
+                const startBtn =
+                    document.getElementById(
+                        "startBtn"
+                    );
+
+
+                const skipIntroBtn =
+                    document.getElementById(
+                        "skipIntroBtn"
+                    );
+
+
+                const introStatus =
+                    document.getElementById(
+                        "introStatus"
+                    );
+
+
+                const introProgressWrapper =
+                    document.getElementById(
+                        "introProgressWrapper"
+                    );
+
+
+                const introProgress =
+                    document.getElementById(
+                        "introProgress"
+                    );
+
+
+                const introAudio =
+                    document.getElementById(
+                        "introAudio"
+                    );
+
+
+                let introStarted = false;
+
+
+
+                /* =================================================
+                   INITIAL INTRO SIZE
+                ================================================= */
+
+                resizeIntro();
+
+
+
+                window.addEventListener(
+                    "resize",
+                    function () {
+
+                        resizeIntro();
+
+                    }
+                );
+
+
+                window.addEventListener(
+                    "orientationchange",
+                    function () {
+
+                        setTimeout(
+                            resizeIntro,
+                            100
+                        );
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   CLOSE INTRO
+                ================================================= */
+
+                function closeIntro() {
+
+
+                    startOverlay.classList.add(
+                        "hide"
+                    );
+
+
+                    setTimeout(
+                        function () {
+
+
+                            startOverlay.style.display =
+                                "none";
+
+
+                        },
+                        950
+                    );
+
+                }
+
+
+
+                /* =================================================
+                   START INTRO
+                ================================================= */
+
+                function startIntro() {
+
+
+                    if (introStarted) {
+
+                        return;
+
+                    }
+
+
+                    introStarted = true;
+
+
+                    startBtn.style.display =
+                        "none";
+
+
+                    introStatus.style.display =
+                        "block";
+
+
+                    introStatus.textContent =
+                        "INTRO PLAYING";
+
+
+                    introProgressWrapper.style.display =
+                        "block";
+
+
+                    skipIntroBtn.style.display =
+                        "block";
+
+
+                    /*
+                     * Το περιεχόμενο μεγάλωσε λόγω
+                     * status/progress/skip.
+                     * Ξαναϋπολογίζουμε την κλίμακα.
+                     */
+
+                    setTimeout(
+                        resizeIntro,
+                        20
+                    );
+
+
+                    const playPromise =
+                        introAudio.play();
+
+
+                    if (
+                        playPromise !==
+                        undefined
+                    ) {
+
+
+                        playPromise.catch(
+                            function (error) {
+
+
+                                console.error(
+                                    "Αποτυχία αναπαραγωγής intro:",
+                                    error
+                                );
+
+
+                                startRadioPlayer();
+
+                                closeIntro();
+
+                            }
+                        );
+
+                    }
+
+                }
+
+
+
+                /* =================================================
+                   PLAY BUTTON
+                ================================================= */
+
+                startBtn.addEventListener(
+                    "click",
+                    function () {
+
+                        startIntro();
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   SKIP INTRO
+                ================================================= */
+
+                skipIntroBtn.addEventListener(
+                    "click",
+                    function () {
+
+
+                        introAudio.pause();
+
+                        introAudio.currentTime =
+                            0;
+
+
+                        introStatus.textContent =
+                            "CONNECTING TO LIVE...";
+
+
+                        skipIntroBtn.style.display =
+                            "none";
+
+
+                        introProgressWrapper.style.display =
+                            "none";
+
+
+                        resizeIntro();
+
+
+                        setTimeout(
+                            function () {
+
+
+                                startRadioPlayer();
+
+                                closeIntro();
+
+
+                            },
+                            250
+                        );
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   INTRO PLAY
+                ================================================= */
+
+                introAudio.addEventListener(
+                    "play",
+                    function () {
+
+
+                        introStatus.textContent =
+                            "INTRO PLAYING";
+
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   INTRO PROGRESS
+                ================================================= */
+
+                introAudio.addEventListener(
+                    "timeupdate",
+                    function () {
+
+
+                        if (
+
+                            introAudio.duration &&
+
+                            isFinite(
+                                introAudio.duration
+                            )
+
+                        ) {
+
+
+                            const percentage =
+
+                                (
+                                    introAudio.currentTime /
+                                    introAudio.duration
+                                ) * 100;
+
+
+                            introProgress.style.width =
+
+                                percentage + "%";
+
+                        }
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   INTRO FINISHED
+                ================================================= */
+
+                introAudio.addEventListener(
+                    "ended",
+                    function () {
+
+
+                        introProgress.style.width =
+                            "100%";
+
+
+                        introStatus.textContent =
+                            "CONNECTING TO LIVE...";
+
+
+                        skipIntroBtn.style.display =
+                            "none";
+
+
+                        introProgressWrapper.style.display =
+                            "none";
+
+
+                        resizeIntro();
+
+
+                        setTimeout(
+                            function () {
+
+
+                                startRadioPlayer();
+
+                                closeIntro();
+
+
+                            },
+                            450
+                        );
+
+                    }
+                );
+
+
+
+                /* =================================================
+                   INTRO ERROR
+                ================================================= */
+
+                introAudio.addEventListener(
+                    "error",
+                    function () {
+
+
+                        console.warn(
+                            "Το intro δεν βρέθηκε. Εκκίνηση radio."
+                        );
+
+
+                        startRadioPlayer();
+
+                        closeIntro();
+
+
+                    }
+                );
+
+            }
+        );
+
+
+
+        /* =========================================================
+           LOADING MODAL
+        ========================================================= */
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+
+                const modal =
+                    document.getElementById(
+                        "loadingModal"
+                    );
+
+
+                let lastState = null;
+
+
+                setInterval(
+                    function () {
+
+
+                        const preloader =
+                            document.getElementById(
+                                "playeraudiopreloader"
+                            );
+
+
+                        if (!preloader) {
+
+                            return;
+
+                        }
+
+
+                        const isVisible =
+                            $(preloader).is(
+                                ":visible"
+                            );
+
+
+                        if (
+                            isVisible &&
+                            lastState !== true
+                        ) {
+
+
+                            modal.style.display =
+                                "flex";
+
+
+                            lastState =
+                                true;
+
+                        }
+
+
+                        else if (
+                            !isVisible &&
+                            lastState !== false
+                        ) {
+
+
+                            modal.style.display =
+                                "none";
+
+
+                            lastState =
+                                false;
+
+                        }
+
+
+                    },
+                    150
+                );
+
+            }
+        );
+
+
+
+        /* =========================================================
+           ZENO.FM METADATA
+        ========================================================= */
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+
+                const zenoStationId =
+                    "x8gduy6xd48uv";
+
+
+                const metadataUrl =
+
+                    `https://api.zeno.fm/mounts/metadata/subscribe/${zenoStationId}`;
+
+
+                /*
+                 * Δεν βάζουμε προσωρινό/default τίτλο.
+                 * Ο τίτλος θα εμφανιστεί μόνο όταν το Zeno στείλει
+                 * πραγματικό streamTitle.
+                 */
+                let currentTitle = "";
+                let metadataReady = false;
+
+
+
+                /* =================================================
+                   UPDATE TITLE
+                ================================================= */
+
+                function forceUpdateTitle(
+                    title
+                ) {
+
+                    const cleanTitle =
+                        (title || "").toString().trim();
+
+                    if (!cleanTitle) {
+                        return;
+                    }
+
+                    currentTitle = cleanTitle;
+                    metadataReady = true;
+
+                    if (
+                        window.parent !==
+                        window
+                    ) {
+
+                        window.parent.postMessage(
+                            {
+                                type:
+                                    "RADIO_TITLE_UPDATE",
+                                title:
+                                    currentTitle
+                            },
+                            "*"
+                        );
+
+                    }
+
+                    const titleElements =
+                        document.querySelectorAll(
+                            "#player_texttitle, .playertexttitlespan"
+                        );
+
+                    titleElements.forEach(
+                        function (el) {
+
+                            if (el) {
+
+                                el.textContent =
+                                    currentTitle;
+
+                                el.style.setProperty(
+                                    "display",
+                                    "block",
+                                    "important"
+                                );
+
+                                el.style.setProperty(
+                                    "visibility",
+                                    "visible",
+                                    "important"
+                                );
+
+                                el.style.setProperty(
+                                    "opacity",
+                                    "1",
+                                    "important"
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+
+
+                /* =================================================
+                   ZENO EVENT SOURCE
+                ================================================= */
+
+                let eventSource =
+                    new EventSource(
+                        metadataUrl
+                    );
+
+
+                eventSource.onmessage =
+                    function (event) {
+
+
+                        try {
+
+
+                            const data =
+                                JSON.parse(
+                                    event.data
+                                );
+
+
+                            if (
+
+                                data &&
+
+                                data.streamTitle &&
+
+                                data.streamTitle
+                                    .trim() !== ""
+
+                            ) {
+
+
+                                const newTitle =
+
+                                    data.streamTitle
+                                        .trim();
+
+
+                                if (
+                                    newTitle !==
+                                    currentTitle
+                                ) {
+
+
+                                    forceUpdateTitle(
+                                        newTitle
+                                    );
+
+                                }
+
+                            }
+
+
+                        }
+                        catch (e) {
+
+
+                            console.error(
+                                "Σφάλμα JSON:",
+                                e
+                            );
+
+                        }
+
+                    };
+
+
+
+                /* =================================================
+                   RECONNECT
+                ================================================= */
+
+                eventSource.onerror =
+                    function () {
+
+
+                        eventSource.close();
+
+
+                        setTimeout(
+                            function () {
+
+
+                                eventSource =
+                                    new EventSource(
+                                        metadataUrl
+                                    );
+
+
+                            },
+                            5000
+                        );
+
+                    };
+
+
+
+                /* =================================================
+                   KEEP TITLE UPDATED
+                ================================================= */
+
+                setInterval(
+                    function () {
+
+                        const titleElements =
+                            document.querySelectorAll(
+                                "#player_texttitle, .playertexttitlespan"
+                            );
+
+                        titleElements.forEach(
+                            function (el) {
+
+                                if (!el) {
+                                    return;
+                                }
+
+                                if (!metadataReady) {
+                                    /*
+                                     * Πριν έρθει metadata, δεν επιτρέπουμε
+                                     * στον LunaRadio να εμφανίσει προσωρινό
+                                     * περιεχόμενο (π.χ. CSS/HTML).
+                                     */
+                                    el.textContent = "";
+                                    el.style.setProperty(
+                                        "visibility",
+                                        "hidden",
+                                        "important"
+                                    );
+                                    el.style.setProperty(
+                                        "opacity",
+                                        "0",
+                                        "important"
+                                    );
+                                    return;
+                                }
+
+                                if (
+                                    el.textContent.trim() !==
+                                    currentTitle
+                                ) {
+                                    el.textContent = currentTitle;
+                                }
+
+                                el.style.setProperty(
+                                    "display",
+                                    "block",
+                                    "important"
+                                );
+                                el.style.setProperty(
+                                    "visibility",
+                                    "visible",
+                                    "important"
+                                );
+                                el.style.setProperty(
+                                    "opacity",
+                                    "1",
+                                    "important"
+                                );
+
+                            }
+                        );
+
+                    },
+                    500
+                );
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
