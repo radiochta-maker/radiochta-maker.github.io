@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+ <meta charset="utf-8">
+ <title> Το ερωτικό ραδιόφωνο</title>
+ <meta name="description" content="Radio  - Το αγαπημένο σου ερωτικό ραδιόφωνο online. Ακούστε ζωντανά μουσική και επιτυχίες.">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta property="og:image" content="foto-face.png">
+ <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  min-height: 100vh;
+  overflow-y: auto;
+  background-color: #000;
+  background-image: url('fonto-radio.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+  
+  #backgroundOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); 
+    z-index: 0; 
+    pointer-events: none;
+  }
+  
+  #loadingModal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.85);
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    padding: 15px;
+    backdrop-filter: blur(5px);
+  }
+  .modal-content {
+    background: rgba(20, 20, 20, 0.95);
+    padding: 30px;
+    border: 2px solid #00ffcc;
+    border-radius: 15px;
+    color: #00ffcc;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 0 30px #00ffcc;
+    animation: pulse 1.5s infinite;
+    max-width: 85%;
+    word-wrap: break-word;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .player-btn {
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.0) url('radio.png') center/cover no-repeat;
+    color: #00ffcc; font-size: 20px; display: flex; align-items: flex-end; justify-content: center;
+    position: absolute; top: 40px; z-index: 5;
+    transition: transform 0.1s linear;
+    text-shadow: 0 0 8px #00ffcc; font-weight: bold; padding-bottom: 10px;
+    --glow-h: 174; 
+    --glow-size: 20px;
+    border: 4px solid hsl(var(--glow-h), 100%, 50%);
+    box-shadow: 0 0 var(--glow-size) hsla(var(--glow-h), 100%, 50%, 0.8), 
+                0 0 calc(var(--glow-size) / 2) hsla(var(--glow-h), 100%, 70%, 1);
+  }
+  #playBtn {
+    position: absolute; top: 20px; right: 20px;
+    width: 100px; height: 45px; border-radius: 8px;
+    border: 2px solid #00ffcc; background: rgba(0, 0, 0, 0.6);
+    color: #00ffcc; cursor: pointer; font-weight: bold; z-index: 100;
+    box-shadow: 0 0 15px #00ffcc; display: flex; align-items: center; justify-content: center;
+    transition: 0.3s;
+  }
+  #playBtn:hover { background: rgba(0, 255, 204, 0.15); }
+  #skipIntroBtn {
+    display: none;
+    position: absolute; bottom: 20px; right: 20px;
+    width: 140px; height: 40px; border-radius: 8px;
+    border: 2px solid #ffcc00; background: rgba(0, 0, 0, 0.7);
+    color: #ffcc00; cursor: pointer; font-weight: bold; z-index: 101;
+    font-size: 13px; align-items: center; justify-content: center;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4); transition: 0.3s;
+  }
+  #skipIntroBtn:hover { background: #ffcc00; color: #000; box-shadow: 0 0 20px #ffcc00; }
+  
+  #status {
+    position: absolute; top: 250px; font-weight: 700; letter-spacing: 1px; font-size: 24px; z-index: 6;
+    text-align: center; width: 100%;
+  }
+  .onair { color: #00ff99; text-shadow: 0 0 10px #00ff99; }
+  .offair { color: #ff6600; text-shadow: 0 0 12px #ff6600; }
+  .loading { color: #ffaa00; text-shadow: 0 0 10px #ffaa00; }
+  .fallback { color: #00ccff; text-shadow: 0 0 12px #00ccff; }
+  
+  #equalizer { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 1; 
+    pointer-events: none; 
+  }
+  
+  #nowPlaying {
+    position: absolute;
+    top: 360px;
+    width: 90%;
+    height: 50px;
+    z-index: 4;
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 26px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px #ff0000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0) 100%);
+  }
+  .scroll-text {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 15s linear infinite;
+  }
+  @keyframes marquee {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+  }
+  .static-text {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    animation: floatTitle 3s ease-in-out infinite alternate;
+  }
+  @keyframes floatTitle {
+    from { transform: translateY(0px); opacity: 0.9; }
+    to { transform: translateY(-5px); opacity: 1; }
+  }
+  #volumeControl {
+    position: absolute; top: 310px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; z-index: 5;
+  }
+  #volumeSlider {
+    width: 250px; height: 5px; appearance: none; background: #333; border-radius: 5px; outline: none; box-shadow: 0 0 10px #00ffcc;
+  }
+  #volumeSlider::-webkit-slider-thumb {
+    appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #00ffcc; cursor: pointer; box-shadow: 0 0 10px #00ffcc;
+  }
+  #volumeValue { font-size: 18px; color: #00ffcc; text-shadow: 0 0 8px #00ffcc; width: 50px; text-align: left; }
+  #effectBtn {
+    position: absolute; top: 20px; left: 20px;
+    width: 100px; height: 45px; border-radius: 8px;
+    border: 2px solid #00ffcc; background: rgba(0, 0, 0, 0.6);
+    color: #00ffcc; cursor: pointer; font-weight: bold; z-index: 100;
+    box-shadow: 0 0 15px #00ffcc; display: flex; align-items: center; justify-content: center;
+    transition: 0.3s;
+  }
+  #effectBtn:hover { background: rgba(0, 255, 204, 0.15); }
+
+  /* ===== Κουμπιά playlist ===== */
+  #playlistControls {
+    display: none;
+    position: absolute;
+    top: 430px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 18px;
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+  }
+  #playlistControls.show {
+    display: flex;
+  }
+  .playlist-btn {
+    width: 70px;
+    height: 48px;
+    border-radius: 10px;
+    border: 2px solid #00ffcc;
+    background: rgba(0, 0, 0, 0.7);
+    color: #00ffcc;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    transition: 0.25s;
+    user-select: none;
+  }
+  .playlist-btn:hover {
+    background: rgba(0, 255, 204, 0.2);
+    box-shadow: 0 0 22px #00ffcc;
+    transform: scale(1.08);
+  }
+  .playlist-btn:active {
+    transform: scale(0.95);
+  }
+  #playlistPlayPause {
+    width: 90px;
+    font-size: 18px;
+  }
+
+  /* ===== Μπάρα προόδου ===== */
+  #progressContainer {
+    display: none;
+    position: absolute;
+    top: 500px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 420px;
+    z-index: 10;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  #progressContainer.show {
+    display: flex;
+  }
+  #progressTime {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 13px;
+    color: #00ffcc;
+    text-shadow: 0 0 6px #00ffcc;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  #progressBar {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #222;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+  }
+  #progressBar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00ffcc;
+    cursor: pointer;
+    box-shadow: 0 0 10px #00ffcc;
+    border: none;
+  }
+  #progressBar::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00ffcc;
+    cursor: pointer;
+    box-shadow: 0 0 10px #00ffcc;
+    border: none;
+  }
+
+  .spinner {
+    width: 50px; height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.1);
+    border-top: 5px solid #00ffcc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto 0;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 4px; box-shadow: 0 0 10px #00ffcc; }
+  ::-webkit-scrollbar-thumb:hover { background: #00cca3; }
+  
+  @media (max-height: 600px) {
+    body {
+      align-items: flex-start;
+      padding-top: 20px;
+    }
+    .player-btn {
+      top: 20px;
+      width: 140px;
+      height: 140px;
+    }
+    #status {
+      top: 180px;
+      font-size: 20px;
+    }
+    #volumeControl {
+      top: 230px;
+    }
+    #volumeSlider {
+      width: 200px;
+    }
+    #nowPlaying {
+      top: 280px;
+      font-size: 22px;
+    }
+    #playlistControls {
+      top: 340px;
+    }
+    #progressContainer {
+      top: 410px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="backgroundOverlay"></div>
+<div id="loadingModal">
+  <div class="modal-content">
+    <div id="modalText">Φόρτωση...</div>
+    <div class="spinner"></div>
+  </div>
+</div>
+<canvas id="equalizer"></canvas>
+<div class="player-btn" id="visualizerCircle"></div>
+<div id="playBtn">Play</div>
+<div id="skipIntroBtn">Παράλειψη Intro</div>
+<div id="status" class="offair">Πάτησε Play</div>
+<div id="nowPlaying"><span class="static-text">Radio Erotiko Live</span></div>
+<div id="volumeControl">
+  <input type="range" id="volumeSlider" min="0" max="100" value="100">
+  <span id="volumeValue">100%</span>
+</div>
+
+<!-- Κουμπιά playlist -->
+<div id="playlistControls">
+  <button class="playlist-btn" id="prevBtn" title="Προηγούμενο">⏮</button>
+  <button class="playlist-btn" id="playlistPlayPause" title="Παύση / Play">⏸</button>
+  <button class="playlist-btn" id="nextBtn" title="Επόμενο">⏭</button>
+</div>
+
+<!-- Μπάρα προόδου -->
+<div id="progressContainer">
+  <div id="progressTime">
+    <span id="currentTime">0:00</span>
+    <span id="totalTime">0:00</span>
+  </div>
+  <input type="range" id="progressBar" min="0" max="100" value="0" step="0.1">
+</div>
+
+<div id="effectBtn">Wave 👆</div>
+<script>                    
+const LIVE_URL = "https://freestream.hu:8340/trela233";
+const STATUS_URL = "https://freestream.hu:8340/status-json.xsl?mount=/trela233";
+const INTRO_URL = "https://lini-me-dikeomata-sakis.radio-chat-music-live.workers.dev/%CF%8C%CE%BC%CE%BF%CF%81%CF%86%CE%B7%20%CE%BA%CE%BF%CF%80%CE%B5%CE%BB%CE%B9%CE%AC...mp3";
+const originalRadioName = "Radio Erotiko LIVE";
+
+// Ενσωματωμένη λίστα τραγουδιών και baseUrl
+const baseUrl = 'https://monumental-marshmallow-3d1d68.netlify.app/';
+const rawSongs = [
+    { title: "είναι η αιώνια αγκαλιά.mp3", file: "_%CE%B5%CE%AF%CE%BD%CE%B1%CE%B9%20%CE%B7%20%CE%B1%CE%B9%CF%8E%CE%BD%CE%B9%CE%B1%20%CE%B1%CE%BA%CE%B1%CE%BB%CE%B9%CE%AC.mp3" },
+    { title: "«Μείνε λίγο ακόμα».mp3", file: "%C2%AB%CE%9C%CE%B5%CE%AF%CE%BD%CE%B5%20%CE%BB%CE%AF%CE%B3%CE%BF%20%CE%B1%CE%BA%CF%8C%CE%BC%CE%B1%C2%BB.mp3" },
+    { title: "«Μόνο Εσύ».mp3", file: "%C2%AB%CE%9C%CF%8C%CE%BD%CE%B0%20%CE%95%CF%83%CF%8D%C2%BB.mp3" },
+    { title: "Έλα κοντά μου να σου πω το φλιτζάνι.mp3", file: "%CE%88%CE%BB%CE%B1%20%CE%BA%CE%BF%CE%BD%CF%84%CE%AC%20%CE%BC%CE%BF%CF%85%20%CE%BD%CE%B1%20%CF%83%CE%BF%CF%85%20%CF%80%CF%89%20%CF%84%CE%BF%20%CF%86%CE%BB%CE%B9%CF%84%CE%B6%CE%AC%CE%BD%CE%B9.mp3" },
+    { title: "Έχω την αίσθηση.mp3", file: "%CE%88%CF%87%CF%89%20%CF%84%CE%B7%CE%BD%20%CE%B1%CE%AF%CF%83%CE%B8%CE%B7%CF%83%CE%B7.mp3" },
+    { title: "Όμορφα μάτια, με γοητεύουν.mp3", file: "%CE%8C%CE%BC%CE%BF%CF%81%CF%86%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1%2C%20%CE%BC%CE%B5%20%CE%B3%CE%BF%CE%B7%CF%84%CE%B5%CF%8D%CE%BF%CF%85%CE%BD.mp3" },
+    { title: "Όνειρα ερωτευμένα Techno.mp3", file: "%CE%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1%20%CE%B5%CF%81%CF%89%CF%84%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B1%20%20%20Techno.mp3" },
+    { title: "Όνειρα ερωτευμένα bouzouki.mp3", file: "%CE%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1%20%CE%B5%CF%81%CF%89%CF%84%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B1%20%20%20bouzouki.mp3" },
+    { title: "Αυτά τα μάτια.mp3", file: "%CE%91%CF%85%CF%84%CE%AC%20%CF%84%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1.mp3" },
+    { title: "Γιατί Πάλι Αγαπάς.mp3", file: "%CE%93%CE%B9%CE%B1%CF%84%CE%AF%20%CE%A0%CE%AC%CE%BB%CE%B9%20%CE%91%CE%B3%CE%B1%CF%80%CE%AC%CF%82.mp3" },
+    { title: "Δεν είναι ζήλια.mp3", file: "%CE%94%CE%B5%CE%BD%20%CE%B5%CE%AF%CE%BD%CE%B1%CE%B9%20%CE%B6%CE%AE%CE%BB%CE%B9%CE%B1.mp3" },
+    { title: "Δυο φωνές.mp3", file: "%CE%94%CF%85%CE%BF%20%CF%86%CF%89%CE%BD%CE%AD%CF%82.mp3" },
+    { title: "Δύο όψεις.mp3", file: "%CE%94%CF%8D%CE%BF%20%CF%8C%CF%88%CE%B5%CE%B9%CF%82.mp3" },
+    { title: "Είσαι πυρκαγιά.mp3", file: "%CE%95%CE%AF%CF%83%CE%B1%CE%B9%20%CF%80%CF%85%CF%81%CE%BA%CE%B1%CE%B3%CE%B9%CE%AC.mp3" },
+    { title: "Ευτυχώς που γεννήθηκα σε χρόνια απλά.mp3", file: "%CE%95%CF%85%CF%84%CF%85%CF%87%CF%8E%CF%82%20%CF%80%CE%BF%CF%85%20%CE%B3%CE%B5%CE%BD%CE%BD%CE%AE%CE%B8%CE%B7%CE%BA%CE%B1%20%CF%83%CE%B5%20%CF%87%CF%81%CF%8C%CE%BD%CE%B9%CE%B1%20%CE%B1%CF%80%CE%BB%CE%AC.mp3" },
+    { title: "Η Πόρτα Ανοικτή ballad.mp3", file: "%CE%97%20%CE%A0%CF%8C%CF%81%CF%84%CE%B1%20%CE%91%CE%BD%CE%BF%CE%B9%CE%BA%CF%84%CE%AE%20ballad.mp3" },
+    { title: "Η Τιμή της Διαύγειας.mp3", file: "%CE%97%20%CE%A4%CE%B9%CE%BC%CE%AE%20%CF%84%CE%B7%CF%82%20%CE%94%CE%B9%CE%B1%CF%8D%CE%B3%CE%B5%CE%B9%CE%B1%CF%82.mp3" },
+    { title: "Η Φυλακή Σου 3.mp3", file: "%CE%97%20%CE%A6%CF%85%CE%BB%CE%B1%CE%BA%CE%AE%20%CE%A3%CE%BF%CF%85%203.mp3" },
+    { title: "Η Φυλακή Σου.mp3", file: "%CE%97%20%CE%A6%CF%85%CE%BB%CE%B1%CE%BA%CE%AE%20%CE%A3%CE%BF%CF%85.mp3" },
+    { title: "Η ζωή με δίδαξε 2.mp3", file: "%CE%97%20%CE%B6%CF%89%CE%AE%20%CE%BC%CE%B5%20%CE%B4%CE%AF%CE%B4%CE%B1%CE%BE%CE%B5%202.mp3" },
+    { title: "Η ζωή με δίδαξε.mp3", file: "%CE%97%20%CE%B6%CF%89%CE%AE%20%CE%BC%CE%B5%20%CE%B4%CE%AF%CE%B4%CE%B1%CE%BE%CE%B5.mp3" },
+    { title: "Θέλω να γίνω uk.mp3", file: "%CE%98%CE%AD%CE%BB%CF%89%20%CE%BD%CE%B1%20%CE%B3%CE%AF%CE%BD%CF%89%20uk.mp3" },
+    { title: "Θέλω να μυρίσω το δέρμα σου uk.mp3", file: "%CE%98%CE%AD%CE%BB%CF%89%20%CE%BD%CE%B1%20%CE%BC%CF%85%CF%81%CE%AF%CF%83%CF%89%20%CF%84%CE%BF%20%CE%B4%CE%AD%CF%81%CE%BC%CE%B1%20%CF%83%CE%BF%CF%85%20uk.mp3" },
+    { title: "Θυμάμαι τότε Techno, House.mp3", file: "%CE%98%CF%85%CE%BC%CE%AC%CE%BC%CE%B1%CE%B9%20%CF%84%CF%8C%CF%84%CE%B5%20Techno%2C%20House.mp3" },
+    { title: "Καίγομαι.mp3", file: "%CE%9A%CE%B1%CE%AF%CE%B3%CE%BF%CE%BC%CE%B1%CE%B9.mp3" },
+    { title: "Καρδιά παραπονιάρα.mp3", file: "%CE%9A%CE%B1%CF%81%CE%B4%CE%B9%CE%AC%20%CF%80%CE%B1%CF%81%CE%B1%CF%80%CE%BF%CE%BD%CE%B9%CE%AC%CF%81%CE%B1.mp3" },
+    { title: "Κλείσε με στο λιμάνι σου.mp3", file: "%CE%9A%CE%BB%CE%B5%CE%AF%CF%83%CE%B5%20%CE%BC%CE%B5%20%CF%83%CF%84%CE%BF%20%CE%BB%CE%B9%CE%BC%CE%AC%CE%BD%CE%B9%20%CF%83%CE%BF%CF%85.mp3" },
+    { title: "Κλείσε τα μάτια.mp3", file: "%CE%9A%CE%BB%CE%B5%CE%AF%CF%83%CE%B5%20%CF%84%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1.mp3" },
+    { title: "Κράτα με να χαθώ.mp3", file: "%CE%9A%CF%81%CE%AC%CF%84%CE%B1%20%CE%BC%CE%B5%20%CE%BD%CE%B1%20%CF%87%CE%B1%CE%B8%CF%8E.mp3" },
+    { title: "Μάτια και Λογική.mp3", file: "%CE%9C%CE%AC%CF%84%CE%B9%CE%B1%20%CE%BA%CE%B1%CE%B9%20%CE%9B%CE%BF%CE%B3%CE%B9%CE%BA%CE%AE.mp3" },
+    { title: "Μέσα στο πλήθος.mp3", file: "%CE%9C%CE%AD%CF%83%CE%B1%20%CF%83%CF%84%CE%BF%20%CF%80%CE%BB%CE%AE%CE%B8%CE%BF%CF%82.mp3" },
+    { title: "Μα εγώ θα σε βρω εκεί.mp3", file: "%CE%9C%CE%B1%20%CE%B5%CE%B3%CF%8E%20%CE%B8%CE%B1%20%CF%83%CE%B5%20%CE%B2%CF%81%CF%89%20%CE%B5%CE%BA%CE%B5%CE%AF.mp3" },
+    { title: "Μα η καρδιά δεν ακούει.mp3", file: "%CE%9C%CE%B1%20%CE%B7%20%CE%BA%CE%B1%CF%81%CE%B4%CE%B9%CE%AC%20%CE%B4%CE%B5%CE%BD%20%CE%B1%CE%BA%CE%BF%CF%8D%CE%B5%CE%B9.mp3" },
+    { title: "Με κάθε τρόπο, ο Θεός με προστατεύει gr.mp3", file: "%CE%9C%CE%B5%20%CE%BA%CE%AC%CE%B8%CE%B5%20%CF%84%CF%81%CF%8C%CF%80%CE%BF%2C%20%CE%BF%20%CE%98%CE%B5%CF%8C%CF%82%20%CE%BC%CE%B5%20%CF%80%CF%81%CE%BF%CF%83%CF%84%CE%B1%CF%84%CE%B5%CF%8D%CE%B5%CE%B9%20gr.mp3" },
+    { title: "Με κάθε τρόπο, ο Θεός με προστατεύει,.mp3", file: "%CE%9C%CE%B5%20%CE%BA%CE%AC%CE%B8%CE%B5%20%CF%84%CF%81%CF%8C%CF%80%CE%BF%2C%20%CE%BF%20%CE%98%CE%B5%CF%8C%CF%82%20%CE%BC%CE%B5%20%CF%80%CF%81%CE%BF%CF%83%CF%84%CE%B1%CF%84%CE%B5%CF%8D%CE%B5%CE%B9%2C.mp3" },
+    { title: "Μείνε κοντά μου House.mp3", file: "%CE%9C%CE%B5%CE%AF%CE%BD%CE%B5%20%CE%BA%CE%BF%CE%BD%CF%84%CE%AC%20%CE%BC%CE%BF%CF%85%20House.mp3" },
+    { title: "Μείνετε κοντά μου Opera.mp3", file: "%CE%9C%CE%B5%CE%AF%CE%BD%CE%B5%CF%84%CE%B5%20%CE%BA%CE%BF%CE%BD%CF%84%CE%AC%20%CE%BC%CE%BF%CF%85%20Opera.mp3" },
+    { title: "Μην φοβάσαι.mp3", file: "%CE%9C%CE%B7%CE%BD%20%CF%86%CE%BF%CE%B2%CE%AC%CF%83%CE%B1%CE%B9.mp3" },
+    { title: "Μια Ζωή Μαζί.mp3", file: "%CE%9C%CE%B9%CE%B1%20%CE%96%CF%89%CE%AE%20%CE%9C%CE%B1%CE%B6%CE%AF.mp3" },
+    { title: "Μοναξιά… δεν έρχεσαι τυχαία Blues UK.mp3", file: "%CE%9C%CE%BF%CE%BD%CE%B1%CE%BE%CE%B9%CE%AC%E2%80%A6%20%CE%B4%CE%B5%CE%BD%20%CE%AD%CF%81%CF%87%CE%B5%CF%83%CE%B1%CE%B9%20%CF%84%CF%85%CF%87%CE%B1%CE%AF%CE%B1%20Blues%20UK.mp3" },
+    { title: "Μοναξιά… δεν έρχεσαι τυχαία Blues.mp3", file: "%CE%9C%CE%BF%CE%BD%CE%B1%CE%BE%CE%B9%CE%AC%E2%80%A6%20%CE%B4%CE%B5%CE%BD%20%CE%AD%CF%81%CF%87%CE%B5%CF%83%CE%B1%CE%B9%20%CF%84%CF%85%CF%87%CE%B1%CE%AF%CE%B1%20Blues.mp3" },
+    { title: "Μοναξιά… δεν έρχεσαι τυχαία Duet.mp3", file: "%CE%9C%CE%BF%CE%BD%CE%B1%CE%BE%CE%B9%CE%AC%E2%80%A6%20%CE%B4%CE%B5%CE%BD%20%CE%AD%CF%81%CF%87%CE%B5%CF%83%CE%B1%CE%B9%20%CF%84%CF%85%CF%87%CE%B1%CE%AF%CE%B1%20Duet.mp3" },
+    { title: "Ο Έρωτας.mp3", file: "%CE%9F%20%CE%88%CF%81%CF%89%CF%84%CE%B1%CF%82.mp3" },
+    { title: "Ο Ιερός Έρωτας.mp3", file: "%CE%9F%20%CE%99%CE%B5%CF%81%CF%8C%CF%82%20%CE%88%CF%81%CF%89%CF%84%CE%B1%CF%82.mp3" },
+    { title: "Ο έρωτας για μένα είναι κύμα.mp3", file: "%CE%9F%20%CE%AD%CF%81%CF%89%CF%84%CE%B1%CF%82%20%CE%B3%CE%B9%CE%B1%20%CE%BC%CE%AD%CE%BD%CE%B1%20%CE%B5%CE%AF%CE%BD%CE%B1%CE%B9%20%CE%BA%CF%8D%CE%BC%CE%B1.mp3" },
+    { title: "Παραισθήσεις έχω Duet.mp3", file: "%CE%A0%CE%B1%CF%81%CE%B1%CE%B9%CF%83%CE%B8%CE%AE%CF%83%CE%B5%CE%B9%CF%82%20%CE%AD%CF%87%CF%89%20Duet.mp3" },
+    { title: "Παραισθήσεις έχω Female Voice.mp3", file: "%CE%A0%CE%B1%CF%81%CE%B1%CE%B9%CF%83%CE%B8%CE%AE%CF%83%CE%B5%CE%B9%CF%82%20%CE%AD%CF%87%CF%89%20Female%20Voice.mp3" },
+    { title: "Παραισθήσεις.mp3", file: "%CE%A0%CE%B1%CF%81%CE%B1%CE%B9%CF%83%CE%B8%CE%AE%CF%83%CE%B5%CE%B9%CF%82.mp3" },
+    { title: "Πιάνω Φωτιά romantic Pop.mp3", file: "%CE%A0%CE%B9%CE%AC%CE%BD%CF%89%20%CE%A6%CF%89%CF%84%CE%B9%CE%AC%20romantic%20Pop.mp3" },
+    { title: "Σε θάλασσες χωρίς όρια.mp3", file: "%CE%A3%CE%B5%20%CE%B8%CE%AC%CE%BB%CE%B1%CF%83%CF%83%CE%B5%CF%82%20%CF%87%CF%89%CF%81%CE%AF%CF%82%20%CE%C5%81%CE%B9%CE%B1.mp3" },
+    { title: "Σημάδια Ζωής.mp3", file: "%CE%A3%CE%B7%CE%BC%CE%AC%CE%B4%CE%B9%CE%B1%20%CE%96%CF%89%CE%AE%CF%82.mp3" },
+    { title: "Σπασμένα όνειρα.mp3", file: "%CE%A3%CF%80%CE%B1%CF%83%CE%BC%CE%AD%CE%BD%CE%B1%20%CF%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1.mp3" },
+    { title: "Στα ερωτευμένα όνειρα.mp3", file: "%CE%A3%CF%84%CE%B1%20%CE%B5%CF%81%CF%89%CF%84%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B1%20%CF%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1.mp3" },
+    { title: "Στη θάλασσα για άλλη μια φορά.mp3", file: "%CE%A3%CF%84%CE%B7%20%CE%B8%CE%AC%CE%BB%CE%B1%CF%83%CF%83%CE%B1%20%CE%B3%CE%B9%CE%B1%20%CE%AC%CE%BB%CE%BB%CE%B7%20%CE%BC%CE%B9%CE%B1%20%CF%86%CE%BF%CF%81%CE%AC.mp3" },
+    { title: "Στην άκρη της καρδιάς.mp3", file: "%CE%A3%CF%84%CE%B7%CE%BD%20%CE%AC%CE%BA%CF%81%CE%B7%20%CF%84%CE%B7%CF%82%20%CE%BA%CE%B1%CF%81%CE%B4%CE%B9%CE%AC%CF%82.mp3" },
+    { title: "Στο Λιμάνι Σου Pop Rock.mp3", file: "%CE%A3%CF%84%CE%BF%20%CE%9B%CE%B9%CE%BC%CE%AC%CE%BD%CE%B9%20%CE%A3%CE%BF%CF%85%20%20Pop%20Rock.mp3" },
+    { title: "Στο Λιμάνι Σου z.mp3", file: "%CE%A3%CF%84%CE%BF%20%CE%9B%CE%B9%CE%BC%CE%AC%CE%BD%CE%B9%20%CE%A3%CE%BF%CF%85%20z.mp3" },
+    { title: "Στο Λιμάνι Σου.mp3", file: "%CE%A3%CF%84%CE%BF%20%CE%9B%CE%B9%CE%BC%CE%AC%CE%BD%CE%B9%20%CE%A3%CE%BF%CF%85.mp3" },
+    { title: "Συγγνώμη Θεέ μου my God.mp3", file: "%CE%A3%CF%85%CE%B3%CE%B3%CE%BD%CF%8E%CE%BC%CE%B7%20%CE%98%CE%B5%CE%AD%20%CE%BC%CE%BF%CF%85%20my%20God.mp3" },
+    { title: "Συγγνώμη Θεέ μου.mp3", file: "%CE%A3%CF%85%CE%B3%CE%B3%CE%BD%CF%8E%CE%BC%CE%B7%20%CE%98%CE%B5%CE%AD%20%CE%BC%CE%BF%CF%85.mp3" },
+    { title: "Τα μάτια σου Duet.it.mp3", file: "%CE%A4%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1%20%CF%83%CE%BF%CF%85%20Duet.it.mp3" },
+    { title: "Τα μάτια σου your eyes UK.mp3", file: "%CE%A4%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1%20%CF%83%CE%BF%CF%85%20your%20eyes%20UK.mp3" },
+    { title: "Τα μάτια σου, δυο αστέρια.mp3", file: "%CE%A4%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1%20%CF%83%CE%BF%CF%85%2C%20%CE%B4%CF%85%CE%BF%20%CE%B1%CF%83%CF%84%CE%AD%CF%81%CE%B9%CE%B1.mp3" },
+    { title: "Τα μάτια σου.mp3", file: "%CE%A4%CE%B1%20%CE%BC%CE%AC%CF%84%CE%B9%CE%B1%20%CF%83%CE%BF%CF%85.mp3" },
+    { title: "Τι Μου Κάνεις.mp3", file: "%CE%A4%CE%B9%20%CE%9C%CE%BF%CF%85%20%CE%9A%CE%AC%CE%BD%CE%B5%CE%B9%CF%82.mp3" },
+    { title: "Το μυαλό σου Duet.mp3", file: "%CE%A4%CE%BF%20%CE%BC%CF%85%CE%B1%CE%BB%CF%8C%20%CF%83%CE%BF%CF%85%20Duet.mp3" },
+    { title: "Φιλία... ιερό μου πράγμα.mp3", file: "%CE%A6%CE%B9%CE%BB%CE%AF%CE%B1...%20%CE%B9%CE%B5%CF%81%CF%8C%20%CE%BC%CE%BF%CF%85%20%CF%80%CF%81%CE%AC%CE%B3%CE%BC%CE%B1.mp3" },
+    { title: "Φλόγα Απαγορευμένη Blues.mp3", file: "%CE%A6%CE%BB%CF%8C%CE%B3%CE%B1%20%CE%91%CF%80%CE%B1%CE%B3%CE%BF%CF%81%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B7%20Blues.mp3" },
+    { title: "Φλόγα Απαγορευμένη.mp3", file: "%CE%A6%CE%BB%CF%8C%CE%B3%CE%B1%20%CE%91%CF%80%CE%B1%CE%B3%CE%BF%CF%81%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B7.mp3" },
+    { title: "Φτερά του Έρωτα.mp3", file: "%CE%A6%CF%84%CE%B5%CF%81%CE%AC%20%CF%84%CE%BF%CF%85%20%CE%88%CF%81%CF%89%CF%84%CE%B1.mp3" },
+    { title: "Χέρι με χέρι .mp3", file: "%CE%A7%CE%AD%CF%81%CE%B9%20%CE%BC%CE%B5%20%CF%87%CE%AD%CF%81%CE%B9%20.mp3" },
+    { title: "έλα πιο κοντά Techno.mp3", file: "%CE%AD%CE%BB%CE%B1%20%CF%80%CE%B9%CE%BF%20%CE%BA%CE%BF%CE%BD%CF%84%CE%AC%20Techno.mp3" },
+    { title: "ένα κορμί..mp3", file: "%CE%AD%CE%BD%CE%B1%20%CE%BA%CE%BF%CF%81%CE%BC%CE%AF..mp3" },
+    { title: "βλέπω μια θάλασσα γαλάζια.mp3", file: "%CE%B2%CE%BB%CE%AD%CF%80%CF%89%20%CE%BC%CE%B9%CE%B1%20%CE%B8%CE%AC%CE%BB%CE%B1%CF%83%CF%83%CE%B1%20%CE%B3%CE%B1%CE%BB%CE%AC%CE%B6%CE%B9%CE%B1.mp3" },
+    { title: "γυμνή σε λάθος αγκαλιά Trance.mp3", file: "%CE%B3%CF%85%CE%BC%CE%BD%CE%AE%20%CF%83%CE%B5%20%CE%BB%CE%AC%CE%B8%CE%BF%CF%82%20%CE%B1%CE%B3%CE%BA%CE%B1%CE%BB%CE%B9%CE%AC%20Trance.mp3" },
+    { title: "γυμνή σε λάθος αγκαλιά.mp3", file: "%CE%B3%CF%85%CE%BC%CE%BD%CE%AE%20%CF%83%CE%B5%20%CE%BB%CE%AC%CE%B8%CE%BF%CF%82%20%CE%B1%CE%B3%CE%BA%CE%B1%CE%BB%CE%B9%CE%AC.mp3" },
+    { title: "θάλασσα χωρίς ακτή g.mp3", file: "%CE%B8%CE%AC%CE%BB%CE%B1%CF%83%CF%83%CE%B1%20%CF%87%CF%89%CF%81%CE%AF%CF%82%20%CE%B1%CE%BA%CF%84%CE%AE%20g.mp3" },
+    { title: "θάλασσα χωρίς ακτή.mp3", file: "%CE%B8%CE%AC%CE%BB%CE%B1%CF%83%CF%83%CE%B1%20%CF%87%CF%89%CF%81%CE%AF%CF%82%20%CE%B1%CE%BA%CF%84%CE%AE.mp3" },
+    { title: "θα είμαι εδώ.mp3", file: "%CE%B8%CE%B1%20%CE%B5%CE%AF%CE%BC%CE%B1%CE%B9%20%CE%B5%CE%B4%CF%8E.mp3" },
+    { title: "θα συνεχίσω να σε ονειρεύομαι Duet.mp3", file: "%CE%B8%CE%B1%20%CF%83%CF%85%CE%BD%CE%B5%CF%87%CE%AF%CF%83%CF%89%20%CE%BD%CE%B1%20%CF%83%CE%B5%20%CE%BF%CE%BD%CE%B5%CE%B9%CF%81%CE%B5%CF%8D%CE%BF%CE%BC%CE%B1%CE%B9%20Duet.mp3" },
+    { title: "θα συνεχίσω να σε ονειρεύομαι dreams.mp3", file: "%CE%B8%CE%B1%20%CF%83%CF%85%CE%BD%CE%B5%CF%87%CE%AF%CF%83%CF%89%20%CE%BD%CE%B1%20%CF%83%CE%B5%20%CE%BF%CE%BD%CE%B5%CE%B9%CF%81%CE%B5%CF%8D%CE%BF%CE%BC%CE%B1%CE%B9%20dreams.mp3" },
+    { title: "θα συνεχίσω να σε ονειρεύομαι.mp3", file: "%CE%B8%CE%B1%20%CF%83%CF%85%CE%BD%CE%B5%CF%87%CE%AF%CF%83%CF%89%20%CE%BD%CE%B1%20%CF%83%CE%B5%20%CE%BF%CE%BD%CE%B5%CE%B9%CF%81%CE%B5%CF%8D%CE%BF%CE%BC%CE%B1%CE%B9.mp3" },
+    { title: "κοίταξα βαθιά-Duet.mp3", file: "%CE%BA%CE%BF%CE%AF%CF%84%CE%B1%CE%BE%CE%B1%20%CE%B2%CE%B1%CE%B8%CE%B9%CE%AC-Duet.mp3" },
+    { title: "μην το ξεχνάς folk.mp3", file: "%CE%BC%CE%B7%CE%BD%20%CF%84%CE%BF%20%CE%BE%CE%B5%CF%87%CE%BD%CE%AC%CF%82%20folk.mp3" },
+    { title: "μονάχα παγωνιά.mp3", file: "%CE%BC%CE%BF%CE%BD%CE%AC%CF%87%CE%B1%20%CF%80%CE%B1%CE%B3%CF%89%CE%BD%CE%B9%CE%AC.mp3" },
+    { title: "μουσική χωρίς λόγια.mp3", file: "%CE%BC%CE%BF%CF%85%CF%83%CE%B9%CE%BA%CE%AE%20%CF%87%CF%89%CF%81%CE%AF%CF%82%20%CE%BB%CF%8C%CE%B3%CE%B9%CE%B1.mp3" },
+    { title: "ο ιδρώτας σου House.mp3", file: "%CE%BF%20%CE%B9%CE%B4%CF%81%CF%8E%CF%84%CE%B1%CF%82%20%CF%83%CE%BF%CF%85%20House.mp3" },
+    { title: "σε χέρια που φώναζαν.mp3", file: "%CF%83%CE%B5%20%CF%87%CE%AD%CF%81%CE%B9%CE%B1%20%CF%80%CE%BF%CF%85%20%CF%86%CF%8E%CE%BD%CE%B1%CE%B6%CE%B1%CE%BD.mp3" },
+    { title: "τελευταίο μου λιμάνι.mp3", file: "%CF%84%CE%B5%CE%BB%CE%B5%CF%85%CF%84%CE%B1%CE%AF%CE%BF%20%CE%BC%CE%BF%CF%85%20%CE%BB%CE%B9%CE%BC%CE%AC%CE%BD%CE%B9.mp3" },
+    { title: "φλόγα και τη σιωπή.mp3", file: "%CF%86%CE%BB%CF%8C%CE%B3%CE%B1%20%CE%BA%CE%B1%CE%B9%20%CF%84%CE%B7%20%CF%83%CE%B9%CF%89%CF%80%CE%AE.mp3" },
+    { title: "φωνή που τρέμει από πόθο.mp3", file: "%CF%86%CF%89%CE%BD%CE%AE%20%CF%80%CE%BF%CF%85%20%CF%84%CF%81%CE%AD%CE%BC%CE%B5%CE%B9%20%CE%B1%CF%80%CF%8C%20%CF%80%CF%8C%CE%B8%CE%BF.mp3" },
+    { title: "όλα σταματούν.mp3", file: "%CF%8C%CE%BB%CE%B1%20%CF%83%CF%84%CE%B1%CE%BC%CE%B1%CF%84%CE%BF%CF%8D%CE%BD.mp3" },
+    { title: "όλοι ίδιοι.mp3", file: "%CF%8C%CE%BB%CE%BF%CE%B9%20%CE%AF%CE%B4%CE%B9%CE%BF%CE%B9.mp3" },
+    { title: "όμορφα όνειρα, τρελά και ερωτευμένα.mp3", file: "%CF%8C%CE%BC%CE%BF%CF%81%CF%86%CE%B1%20%CF%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1%2C%20%CF%84%CF%81%CE%B5%CE%BB%CE%AC%20%CE%BA%CE%B1%CE%B9%20%CE%B5%CF%81%CF%89%CF%84%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B1.mp3" },
+    { title: "όμορφη κοπελιά...mp3", file: "%CF%8C%CE%BC%CE%BF%CF%81%CF%86%CE%B7%20%CE%BA%CE%BF%CF%80%CE%B5%CE%BB%CE%B9%CE%AC...mp3" },
+    { title: "όμορφη κοπελιά.mp3", file: "%CF%8C%CE%BC%CE%BF%CF%81%CF%86%CE%B7%20%CE%BA%CE%BF%CF%80%CE%B5%CE%BB%CE%B9%CE%AC.mp3" },
+    { title: "όνειρα απαγορευμένα.mp3", file: "%CF%8C%CE%BD%CE%B5%CE%B9%CF%81%CE%B1%20%CE%B1%CF%80%CE%B1%CE%B3%CE%BF%CF%81%CE%B5%CF%85%CE%BC%CE%AD%CE%BD%CE%B1.mp3" },
+    { title: "“Θέλω να νιώσω”.mp3", file: "%E2%80%9C%CE%98%CE%AD%CE%BB%CF%89%20%CE%BD%CE%B1%20%CE%BD%CE%B9%CF%8E%CF%83%CF%89%E2%80%9D.mp3" }
+];
+
+let fallbackPlaylist = [];
+let songTitlesMap = {};
+
+let audio = new Audio(); 
+audio.crossOrigin = "anonymous";
+let audioCtx, analyser, dataArray, bufferLength, sourceNode;
+let isPlaying = false;
+let isLiveOnline = false;
+let isPlayingAuto = false;
+let isIntroActive = false;
+let hasIntroPlayed = false;
+let lastMode = "live"; 
+let currentTrackIndex = 0;
+
+const btn = document.getElementById('playBtn');
+const skipBtn = document.getElementById('skipIntroBtn');
+const visualizerCircle = document.getElementById('visualizerCircle');
+const statusEl = document.getElementById('status');
+const nowPlayingEl = document.getElementById('nowPlaying');
+const canvas = document.getElementById('equalizer');
+const ctx = canvas.getContext('2d');
+const volumeSlider = document.getElementById('volumeSlider');
+const volumeValue = document.getElementById('volumeValue');
+const effectBtn = document.getElementById('effectBtn');
+const loadingModal = document.getElementById('loadingModal');
+const modalText = document.getElementById('modalText');
+
+const playlistControls = document.getElementById('playlistControls');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const playlistPlayPauseBtn = document.getElementById('playlistPlayPause');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const currentTimeEl = document.getElementById('currentTime');
+const totalTimeEl = document.getElementById('totalTime');
+
+let isSeeking = false;
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function showLoading(isLive) {
+  modalText.textContent = isLive ? "φόρτωση live streaming παρακαλώ περιμένετε" : "Φόρτωση αυτόματης μουσικής...";
+  loadingModal.style.display = "flex";
+}
+
+function hideLoading() {
+  loadingModal.style.display = "none";
+}
+
+function resizeCanvas() { 
+  canvas.width = window.innerWidth; 
+  canvas.height = window.innerHeight; 
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function setupAudioNodes() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = audioCtx.createMediaElementSource(audio);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+  sourceNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  drawEqualizer();
+  startButtonBreath();
+}
+
+// Φόρτωση λίστας τραγουδιών απευθείας από τον πίνακα
+function loadFallbackPlaylist() {
+  fallbackPlaylist = rawSongs.map(song => {
+    let fullUrl = baseUrl + song.file;
+    songTitlesMap[fullUrl] = song.title.replace('.mp3', '');
+    return fullUrl;
+  });
+
+  if (fallbackPlaylist.length > 0) {
+    shuffleArray(fallbackPlaylist);
+  }
+}
+
+function fixEncoding(str) {
+  if (!str) return '';
+  try {
+    let bytes = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+      bytes[i] = str.charCodeAt(i);
+    }
+    return new TextDecoder('windows-1253').decode(bytes);
+  } catch (e) {
+    return str;
+  }
+}
+
+function updateUIWithTitle(titleText) {
+  let finalTitle = titleText || originalRadioName;
+  if (finalTitle.length > 25) {
+    nowPlayingEl.innerHTML = `<span class="scroll-text">${finalTitle}</span>`;
+  } else {
+    nowPlayingEl.innerHTML = `<span class="static-text">${finalTitle}</span>`;
+  }
+  
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'RADIO_TITLE_UPDATE', title: finalTitle }, '*');
+  }
+}
+
+async function checkStreamStatus() {
+  if (isIntroActive) return;
+  
+  try {
+    const response = await fetch(STATUS_URL + '&_=' + Date.now());
+    const data = await response.json();
+    
+    let online = false;
+    if (data && data.icestats) {
+      let sourceData = data.icestats.source;
+      if (Array.isArray(sourceData)) {
+        sourceData = sourceData.find(s => s.listenurl && s.listenurl.includes('trela233')) || sourceData[0];
+      }
+      if (sourceData) {
+        online = true;
+        if (!isPlayingAuto) {
+          let title = sourceData.title ? fixEncoding(sourceData.title) : originalRadioName;
+          updateUIWithTitle(title);
+        }
+      }
+    }
+    
+    if (online !== isLiveOnline) {
+      isLiveOnline = online;
+      handleStreamStateChange();
+    }
+  } catch (e) {
+    if (isLiveOnline !== false) {
+      isLiveOnline = false;
+      handleStreamStateChange();
+    }
+  }
+}
+
+function handleStreamStateChange() {
+  if (isPlaying && !isIntroActive) {
+    if (isLiveOnline) {
+      switchToLive();
+    } else {
+      switchToFallback();
+    }
+  }
+}
+
+function switchToLive() {
+  isPlayingAuto = false;
+  lastMode = "live";
+  statusEl.textContent = "ON AIR Radio Erotiko";
+  statusEl.className = "onair";
+  
+  playlistControls.classList.remove('show');
+  progressContainer.classList.remove('show');
+  
+  showLoading(true);
+  audio.pause();
+  audio.src = LIVE_URL;
+  audio.load();
+  
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      setTimeout(hideLoading, 2000);
+    }).catch(err => {
+      console.error("Σφάλμα αναπαραγωγής Live:", err);
+      hideLoading();
+      switchToFallback();
+    });
+  }
+  
+  setTimeout(hideLoading, 5000);
+}
+
+function switchToFallback() {
+  isPlayingAuto = true;
+  lastMode = "fallback";
+  statusEl.textContent = "ON AIR (Auto DJ)";
+  statusEl.className = "fallback";
+  
+  playlistControls.classList.add('show');
+  progressContainer.classList.add('show');
+  updatePlaylistPlayPauseBtn();
+  
+  if (fallbackPlaylist.length > 0) {
+    playTrackAtIndex(currentTrackIndex);
+  } else {
+    updateUIWithTitle("Μη διαθέσιμη αυτόματη μουσική");
+    hideLoading();
+  }
+}
+
+function playTrackAtIndex(index) {
+  if (!isPlayingAuto || fallbackPlaylist.length === 0) return;
+  
+  currentTrackIndex = (index + fallbackPlaylist.length) % fallbackPlaylist.length;
+  const trackUrl = fallbackPlaylist[currentTrackIndex];
+  
+  showLoading(false);
+  audio.src = trackUrl;
+  
+  const displayTitle = songTitlesMap[trackUrl] || decodeURIComponent(trackUrl.split('/').pop().replace('.mp3', '').replace(/_/g, ' '));
+  updateUIWithTitle(displayTitle);
+  
+  progressBar.value = 0;
+  currentTimeEl.textContent = "0:00";
+  totalTimeEl.textContent = "0:00";
+  
+  audio.play().then(() => {
+    isPlaying = true;
+    btn.textContent = "Pause";
+    updatePlaylistPlayPauseBtn();
+  }).catch(() => {
+    currentTrackIndex = (currentTrackIndex + 1) % fallbackPlaylist.length;
+    playTrackAtIndex(currentTrackIndex);
+  });
+}
+
+function playNextFallbackTrack() {
+  if (!isPlayingAuto || fallbackPlaylist.length === 0) return;
+  playTrackAtIndex(currentTrackIndex + 1);
+}
+
+function playPrevFallbackTrack() {
+  if (!isPlayingAuto || fallbackPlaylist.length === 0) return;
+  playTrackAtIndex(currentTrackIndex - 1);
+}
+
+function updatePlaylistPlayPauseBtn() {
+  if (audio.paused) {
+    playlistPlayPauseBtn.textContent = "▶";
+    playlistPlayPauseBtn.title = "Play";
+  } else {
+    playlistPlayPauseBtn.textContent = "⏸";
+    playlistPlayPauseBtn.title = "Παύση";
+  }
+}
+
+function formatTime(seconds) {
+  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function updateProgress() {
+  if (!isPlayingAuto || isSeeking) return;
+  
+  const current = audio.currentTime;
+  const duration = audio.duration;
+  
+  if (duration && isFinite(duration)) {
+    progressBar.value = (current / duration) * 100;
+    currentTimeEl.textContent = formatTime(current);
+    totalTimeEl.textContent = formatTime(duration);
+  }
+}
+
+setInterval(updateProgress, 200);
+
+const effects = [
+  (ctx, data, w, h) => {
+    const barWidth = (w / bufferLength) * 2.5;
+    let x = 0;
+    for(let i = 0; i < bufferLength; i++){
+      const barHeight = data[i] * 0.65;
+      ctx.fillStyle = `hsla(${(i * 5 + barHeight) % 360}, 100%, ${50 + barHeight / 5}%, 0.4)`;
+      ctx.fillRect(x, h - barHeight, barWidth, barHeight);
+      x += barWidth + 1;
+    }
+  },
+  (ctx, data, w, h) => {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(0, 0, w, h);
+    let total = 0;
+    for(let i = 0; i < bufferLength; i++) total += data[i];
+    const avg = total / bufferLength / 255;
+    const starCount = 80 + Math.floor(avg * 200);
+    const time = Date.now() * 0.002;
+    for(let i = 0; i < starCount; i++){
+      const x = (i * 131.7 + time * 50) % w;
+      const y = (i * 89.3 + time * 30) % h;
+      const size = 1 + Math.sin(time * 5 + i) * avg * 4;
+      const opacity = 0.4 + avg * 0.6;
+      const hue = (i * 7 + time * 100) % 360;
+      ctx.shadowBlur = 15 + avg * 25;
+      ctx.shadowColor = `hsla(${hue}, 100%, 80%, ${opacity})`;
+      ctx.fillStyle = `hsla(${hue}, 100%, 95%, ${opacity})`;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  },
+  (ctx, data, w, h) => {
+      ctx.clearRect(0,0,w,h);
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const baseRadius = Math.min(centerX, centerY) * 0.1;
+      const maxRadius = Math.min(centerX, centerY) * 1.5;
+      for (let i = 0; i < bufferLength; i += 2) {
+          const value = data[i];
+          const radius = baseRadius + (maxRadius - baseRadius) * (value / 255);
+          const hue = (i * 10) % 360;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.1)`;
+          ctx.lineWidth = 2 + (value / 50);
+          ctx.stroke();
+      }
+  },
+  (ctx, data, w, h) => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      const sliceWidth = w * 1.0 / bufferLength;
+      let x = 0;
+      for (let i = 0; i < bufferLength; i++) {
+          const value = data[i];
+          const y = (value / 128.0) * (h / 4) + (h / 2); 
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+      }
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      let total = 0;
+      for(let i=0; i<bufferLength; i++) total += data[i];
+      const avg = total / bufferLength;
+      const hue = (avg * 2) % 360;
+      ctx.strokeStyle = `hsla(${hue}, 100%, 50%, 0.8)`;
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.5)`;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+  },
+  (ctx, data, w, h) => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(0, 0, w, h);
+      const centerX = w / 2;
+      const centerY = h / 2;
+      for(let i=0; i<bufferLength; i += 4) {
+          const value = data[i];
+          const angle = (i / bufferLength) * Math.PI * 2;
+          const time = Date.now() * 0.001;
+          const distance = 100 + value * (2 + Math.sin(time + i*0.1));
+          const x = centerX + Math.cos(angle) * distance;
+          const y = centerY + Math.sin(angle) * distance;
+          const size = 2 + value / 20;
+          const hue = (i * 15 + time * 50) % 360;
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, 100%, 70%, 0.6)`;
+          ctx.shadowBlur = size * 2;
+          ctx.shadowColor = `hsla(${hue}, 100%, 70%, 0.4)`;
+          ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+  },
+  (ctx, data, w, h) => { ctx.clearRect(0,0,w,h); }
+];
+let currentEffect = 3;
+const effectNames = ["Bars", "★ Stars", "Circles", "Wave", "Particles", "OFF"];
+
+function drawEqualizer() {
+  requestAnimationFrame(drawEqualizer);
+  if (!analyser) return;
+  analyser.getByteFrequencyData(dataArray);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  effects[currentEffect](ctx, dataArray, canvas.width, canvas.height);
+}
+
+effectBtn.addEventListener('click', () => {
+  currentEffect = (currentEffect + 1) % effects.length;
+  effectBtn.textContent = effectNames[currentEffect] + " 👆";
+});
+
+volumeSlider.addEventListener('input', () => {
+  audio.volume = volumeSlider.value / 100;
+  volumeValue.textContent = `${volumeSlider.value}%`;
+});
+
+audio.addEventListener('ended', () => {
+  if (isIntroActive) {
+    isIntroActive = false;
+    skipBtn.style.display = "none";
+    if (isLiveOnline) switchToLive();
+    else switchToFallback();
+  } else if (isPlayingAuto) {
+    playNextFallbackTrack();
+  } else if (!isPlayingAuto) {
+    switchToFallback();
+  }
+});
+
+audio.addEventListener('error', () => { 
+  hideLoading();
+  if (isIntroActive) {
+    isIntroActive = false;
+    skipBtn.style.display = "none";
+    if (isLiveOnline) switchToLive();
+    else switchToFallback();
+  } else if (!isPlayingAuto) {
+    switchToFallback();
+  }
+});
+
+audio.addEventListener('playing', () => {
+  hideLoading();
+  updatePlaylistPlayPauseBtn();
+});
+audio.addEventListener('pause', updatePlaylistPlayPauseBtn);
+audio.addEventListener('canplay', () => setTimeout(hideLoading, 280));
+audio.addEventListener('loadedmetadata', () => {
+  if (isPlayingAuto && audio.duration) {
+    totalTimeEl.textContent = formatTime(audio.duration);
+  }
+});
+
+async function startIntro() {
+  isIntroActive = true;
+  hasIntroPlayed = true;
+  setupAudioNodes();
+  audio.src = INTRO_URL;
+  statusEl.textContent = "Παίζει Intro...";
+  statusEl.className = "loading";
+  updateUIWithTitle("Καλώς ήρθατε στο Radio Erotiko");
+  skipBtn.style.display = "flex";
+  playlistControls.classList.remove('show');
+  progressContainer.classList.remove('show');
+  try {
+    await audio.play();
+    isPlaying = true;
+    btn.textContent = "Pause";
+  } catch(e) {
+    isIntroActive = false;
+    skipBtn.style.display = "none";
+    if (isLiveOnline) switchToLive();
+    else switchToFallback();
+  }
+}
+
+btn.addEventListener('click', async () => {
+  if (loadingModal.style.display === "flex") return;
+  
+  setupAudioNodes();
+  if (audioCtx && audioCtx.state === 'suspended') {
+    await audioCtx.resume();
+  }
+  if (isPlaying) {
+    audio.pause();
+    btn.textContent = "Play";
+    statusEl.textContent = "Παύση";
+    statusEl.className = "offair";
+    isPlaying = false;
+    skipBtn.style.display = "none";
+    updatePlaylistPlayPauseBtn();
+  } else {
+    isPlaying = true;
+    btn.textContent = "Pause";
+    
+    if (!hasIntroPlayed) {
+      startIntro();
+    } else {
+      await checkStreamStatus();
+      
+      if (isLiveOnline) {
+        switchToLive();
+      } else {
+        if (lastMode === "fallback") {
+          statusEl.textContent = "ON AIR (Auto DJ)";
+          statusEl.className = "fallback";
+          playlistControls.classList.add('show');
+          progressContainer.classList.add('show');
+          audio.play().catch(console.error);
+          updatePlaylistPlayPauseBtn();
+        } else {
+          switchToFallback();
+        }
+      }
+    }
+  }
+});
+
+skipBtn.addEventListener('click', () => {
+  isIntroActive = false;
+  skipBtn.style.display = "none";
+  if (isLiveOnline) switchToLive();
+  else switchToFallback();
+});
+
+prevBtn.addEventListener('click', () => {
+  if (isPlayingAuto) playPrevFallbackTrack();
+});
+
+nextBtn.addEventListener('click', () => {
+  if (isPlayingAuto) playNextFallbackTrack();
+});
+
+playlistPlayPauseBtn.addEventListener('click', async () => {
+  if (!isPlayingAuto) return;
+  
+  if (audio.paused) {
+    try {
+      await audio.play();
+      isPlaying = true;
+      btn.textContent = "Pause";
+      statusEl.textContent = "ON AIR (Auto DJ)";
+      statusEl.className = "fallback";
+    } catch(e) {
+      console.error(e);
+    }
+  } else {
+    audio.pause();
+    isPlaying = false;
+    btn.textContent = "Play";
+    statusEl.textContent = "Παύση";
+    statusEl.className = "offair";
+  }
+  updatePlaylistPlayPauseBtn();
+});
+
+progressBar.addEventListener('mousedown', () => { isSeeking = true; });
+progressBar.addEventListener('touchstart', () => { isSeeking = true; });
+
+progressBar.addEventListener('input', () => {
+  if (!isPlayingAuto || !audio.duration) return;
+  const seekTime = (progressBar.value / 100) * audio.duration;
+  currentTimeEl.textContent = formatTime(seekTime);
+});
+
+progressBar.addEventListener('change', () => {
+  if (!isPlayingAuto || !audio.duration) return;
+  const seekTime = (progressBar.value / 100) * audio.duration;
+  audio.currentTime = seekTime;
+  isSeeking = false;
+});
+
+progressBar.addEventListener('mouseup', () => { isSeeking = false; });
+progressBar.addEventListener('touchend', () => { isSeeking = false; });
+
+let rotation = 0;
+function rotateButton() {
+  if (isPlaying) {
+    rotation += 0.2;
+    visualizerCircle.style.transform = `scale(1.0) rotate(${rotation}deg)`; 
+  }
+  requestAnimationFrame(rotateButton);
+}
+requestAnimationFrame(rotateButton);
+
+let _breathRunning = false;
+let lastLevel = 0;
+function startButtonBreath() {
+  if (_breathRunning) return;
+  _breathRunning = true;
+  
+  function step() {
+    let boost = 0;
+    let targetGlow = 0;
+    let musicHue = 174;
+    
+    if (analyser && dataArray && isPlaying && !audio.paused && (effectNames[currentEffect] !== "OFF")) { 
+      analyser.getByteFrequencyData(dataArray);
+      let bassSum = 0;
+      for (let i = 0; i < 10; i++) bassSum += dataArray[i];
+      let averageBass = bassSum / 10;
+      let colorOscillation = Math.sin(averageBass * 0.05) * 180 + 180;
+      musicHue = Math.floor(174 + colorOscillation) % 360;
+      let currentLevel = averageBass / 255;
+      let delta = currentLevel - lastLevel;
+      if (delta < 0) delta = 0; 
+      lastLevel = currentLevel; 
+      boost = Math.min(delta * 5, 0.4); 
+      targetGlow = Math.min(2.0, averageBass / 50);
+      visualizerCircle.style.setProperty('--glow-size', Math.round(targetGlow * 130) + "px");
+      visualizerCircle.style.setProperty('--glow-h', musicHue);
+    } else {
+      visualizerCircle.style.setProperty('--glow-size', "0px");
+      visualizerCircle.style.setProperty('--glow-h', "174");
+      boost = 0;
+    }
+    visualizerCircle.style.transform = `scale(${1 + boost}) rotate(${rotation}deg)`;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+loadFallbackPlaylist();
+checkStreamStatus();
+setInterval(checkStreamStatus, 10000);
+</script>
+<!--   klidoma apo forma  -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDPGPtuU8ZIlz3qLP8V61UKQ07ad94LtZI",
+        authDomain: "radiochatlive.firebaseapp.com",
+        projectId: "radiochatlive",
+        storageBucket: "radiochatlive.firebasestorage.app",
+        messagingSenderId: "187137786763",
+        appId: "1:187137786763:web:67c3e2effef793ea7f658e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ΑΥΤΟ ΕΙΝΑΙ ΤΟ "ΟΠΛΟ" ΣΟΥ - ΕΛΕΓΧΕΙ ΑΝ Ο ΧΡΗΣΤΗΣ ΥΠΑΡΧΕΙ ΣΤΗ ΒΑΣΗ
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            try {
+                // Αναγκάζει τη Firebase να ελέγξει αν ο λογαριασμός είναι ακόμα ενεργός
+                await user.getIdToken(true);
+            } catch (error) {
+                // Αν τον έχεις διαγράψει, θα "χτυπήσει" σφάλμα εδώ
+                console.log("Ο χρήστης διαγράφηκε. Αποσύνδεση...");
+                localStorage.clear();
+                await signOut(auth);
+                window.location.href = "index.html"; // Βάλε εδώ το όνομα της σελίδας εγγραφής σου
+            }
+        } else {
+            // Αν δεν είναι καν συνδεδεμένος, τον πετάει έξω
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+    });
+</script>
+<!--   klidoma apo forma  -->
+</body>
+</html>
